@@ -16,7 +16,7 @@ let features;
 let avgSentimentsByState;
 
 // Transition
-zoomStateTime = 900;
+zoomStateTime = 750;
 
 // A projection tells D3 how to orient the GeoJSON features
 let projection = d3.geoAlbersUsa()
@@ -46,7 +46,8 @@ Promise.all([
         .attr('class', 'd3-tip')
         .offset([0, 0])
         .html(function (d) {
-            return '<span>' + '<b>' + getCountryObject(d.id).name + '</b>' + '</span>';
+            //return '<span>' + '<b>' + getCountryObject(d.id).name + '</b>' + '</span>';
+            //return '<span>' + '<b>' + avgSentimentsByState[getCountryObject(d.id).code] + '</b>' + '</span>';
         })
         .direction('ne');
 
@@ -148,10 +149,11 @@ Promise.all([
 
     // LEGEND
     legend = d3.legendColor()
-        .labelFormat(d3.format(".2f"))
+        //.labelFormat(d3.format(".2f"))
+        .labels(['Negative','Neutral','Positive'])
+        .title('Average Sentiment')
         .scale(colorScale);
 
-        console.log(height)
     svg.append("g")
         .attr("id", "legend")
         .attr("transform", "translate(" + 0.73*(width) + "," + 0.6*(height) + ")")
@@ -244,9 +246,7 @@ function reset() {
             // Show state abbreviations
             d3.selectAll('.state-names').style("display", "inline");
         });
-
-
-
+        
     // Mark the state as not active anymore
     active.classed("active", false);
     active = d3.select(null);
