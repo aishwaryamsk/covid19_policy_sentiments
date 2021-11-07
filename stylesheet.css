@@ -13,3 +13,7 @@
     stroke-linejoin: round;
     pointer-events: none;
   }
+
+  #legend {
+    font-size: 14px;
+  }
