@@ -1,19 +1,24 @@
+body{
+  margin: 0px;
+  padding: 0px;
+}
+
 .state {
-  /*   fill: #f7f7f7; */
-    fill: #bdbdbd;
-    /* #f7f7f7 */
-    stroke: white;
-    cursor: pointer;
-  }
+/*   fill: #f7f7f7; */
+  fill: #bdbdbd;
+  /* #f7f7f7 */
+  stroke: white;
+  cursor: pointer;
+}
 
-  .mesh {
-    fill: none;
-    stroke: white;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    pointer-events: none;
-  }
+.mesh {
+  fill: none;
+  stroke: white;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
 
-  #legend {
-    font-size: 14px;
-  }
+.legend {
+  font-size: 14px;
+}
