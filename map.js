@@ -187,7 +187,8 @@ function drawMap(svg, us) {
 
     svg.append("g")
         .attr("class", "legend")
-        .attr("transform", "translate(" + 0.73 * (width) + "," + 0.6 * (height) + ")")
+        //.attr("transform", "translate(" + 0.73 * (width) + "," + 0.6 * (height) + ")")
+        .attr("transform", "translate(" + 0.8 * (width) + "," + 0.2 * (height) + ")")
         .call(legend);
 
 
@@ -231,11 +232,19 @@ function handleStateClick(d, i) {
 
     d3.selectAll('.state-names').style("display", "none");
 
+    // Fade legend
+    d3.select('.legend')
+        .transition()
+        .duration(zoomStateTime/2)
+        .style("opacity", 0);
+
     // Fade all states
     d3.selectAll(".state > path")
         .transition()
         .duration(zoomStateTime)
         .style("opacity", 0);
+
+    
 
     // Keep selected state as opaque all states to white
     let activeState = d3.select(this);
@@ -260,7 +269,7 @@ function handleStateClick(d, i) {
         .duration(zoomStateTime)
         .attr('height', timeline_height);
 
-    // Show timeline
+    /* SHOW TIMELINE */
     drawTimeLine(svg_timeline, getCountryObj(features[i].id).code);
     // Make timeline opaque
     d3.select('#timeline')
@@ -283,6 +292,12 @@ function reset() {
         .transition()
         .duration(zoomStateTime)
         .style("opacity", 1)
+
+    // Show legend
+    d3.select('.legend')
+        .transition()
+        .duration(zoomStateTime)
+        .style("opacity", 1);
 
     // Transition to make the border lines thicker (or, back to normal)
     // and remove transformations
