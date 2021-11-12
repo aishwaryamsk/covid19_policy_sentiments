@@ -8,6 +8,7 @@ var margin = { top: 15, right: 70, bottom: 60, left: 50 }
 let geojson = 'https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson';
 let usStatesDir = '/us.json';
 let usAbbrevDir = '/us-state-names.tsv';
+let usPolicyDir = '/states_policies_clean.tsv';
 
 // map data 
 // all time twitter sentiments
@@ -18,6 +19,7 @@ let usAbbreviations;
 let usAbbreviationsDict;
 let map_g;
 let features;
+let usPoliciesByState;
 
 
 let avgSentimentsByState;
@@ -41,13 +43,15 @@ let path = d3.geoPath().projection(projection);
 Promise.all([
     d3.json(usStatesDir),
     d3.tsv(usAbbrevDir),
-    d3.csv(twitterSentimentsDir)
+    d3.csv(twitterSentimentsDir),
+    d3.tsv(usPolicyDir)
 ]).then(data => {
     let us = data[0];
     usAbbreviations = data[1];
     usAbbreviationsDictInit();
     processDataSets(data[2]);
     processDataSetsTimeline(data[2]);
+    processPolicies(data[3]);
 
 
     // LEGEND
@@ -476,16 +480,28 @@ function drawTimeLine(svg, state) {
         );
 
     // draw circles for data points
-    //var colorScale = getColorScale();
 
+    // timeline_g.selectAll(".dot")
+    //     .data(lineData)
+    //     .enter().append("circle") // Uses the enter().append() method
+    //     .attr("class", "dot") // Assign a class for styling
+    //     .attr("cx", function (d, i) { return xScale(d.date) })
+    //     .attr("cy", function (d) { return yScale(d.sentiment) })
+    //     .attr("r", 12)
+    //     .attr("fill", function (d) { return colorScale(d.sentiment) });
+
+    // draw circles for policies
+    let policyData = usPoliciesByState[state];
     timeline_g.selectAll(".dot")
-        .data(lineData)
-        .enter().append("circle") // Uses the enter().append() method
-        .attr("class", "dot") // Assign a class for styling
-        .attr("cx", function (d, i) { return xScale(d.date) })
-        .attr("cy", function (d) { return yScale(d.sentiment) })
+        .data(policyData)
+        .enter().append("circle") 
+        .attr("class", "dot")
+        .attr("cx", function (d, i) { return xScale(d["Date"]) })
+        .attr("cy", function (d) { return 100; })
         .attr("r", 12)
-        .attr("fill", function (d) { return colorScale(d.sentiment) });
+        .attr("fill", "#24541a")
+        .on("mouseover",function (d, i) {d3.select(this).attr("fill", "#32a883");})
+        .on("mouseout", function (d, i) {d3.select(this).attr("fill", "#24541a");})
 
     // add title
 
@@ -501,4 +517,43 @@ function drawTimeLine(svg, state) {
         .attr("transform", "translate(" + 0.85 * (width) + "," + 0.77 * (height) + ")")
         .call(legend); */
 
+}
+
+function processPolicies(usPoliciesData) {
+    let usAbbreviationsDictRev = {};
+    for (let stateAbbr in usAbbreviationsDict) {
+        usAbbreviationsDictRev[usAbbreviationsDict[stateAbbr]] = stateAbbr;
+    }
+
+    const policyDateParser = d3.timeParse("%Y/%m/%d");
+    usPoliciesByState = {};
+    for (let i = 0; i < usPoliciesData.length; i++) {
+        let stateFullname = usPoliciesData[i].State;
+        if (!(stateFullname in usAbbreviationsDictRev)) {
+            console.log("unknown state: " + stateFullname)
+            continue;
+        }
+        let state = usAbbreviationsDictRev[stateFullname];
+        if (!(state in usPoliciesByState)) {
+            usPoliciesByState[state] = [];
+        }
+        let tmp = {"Date": policyDateParser(usPoliciesData[i].Date),
+                   "Action Taken": usPoliciesData[i]["Action Taken"]
+                    };
+        usPoliciesByState[state].push(tmp);
+    }
+    // sort by date
+    for (let state in usPoliciesByState) {
+        usPoliciesByState[state].sort(function(a, b) {
+            let keyA = a["Date"];
+            let keyB = b["Date"];
+            if (keyA < keyB) {
+                return 1;
+            }
+            if (keyA > keyB) {
+                return -1;
+            }
+            return 0;
+        });
+    }
 }
