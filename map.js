@@ -410,7 +410,10 @@ function processDataSetsTimeline(twitterSentiments) {
 }
 
 function drawTimeLine(svg, state) {
-
+    var elementExists = document.getElementById("timeline_g");
+    if (elementExists) {
+        elementExists.remove();
+    }
 
     let sentimentsYM = avgSentimentsByStateYearMonth[state];
 
@@ -425,7 +428,7 @@ function drawTimeLine(svg, state) {
     }
 
     let timeline_g = svg.append("g")
-        .attr("id","timeline")
+        .attr("id","timeline_g")
         .attr("transform",
             "translate(" + margin.left + "," + margin.top + ")");
 
@@ -512,6 +515,9 @@ function drawTimeLine(svg, state) {
 
     let policyData = usPoliciesByState[state];
 
+    let smallCircleSize = 9;
+    let largeCircleSize = 20;
+
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     timeline_g.selectAll(".dot")
@@ -538,7 +544,7 @@ function drawTimeLine(svg, state) {
                 }
             }
             return 100; })
-        .attr("r", 9)
+        .attr("r", smallCircleSize)
         .attr("fill", "#ffffff")
         .attr("stroke", "#24541a")
         .attr("stroke-width", 2.5)
@@ -550,11 +556,12 @@ function drawTimeLine(svg, state) {
             cont += getMultipleLinesHTML(d["Action Taken"], lineMaxLen);
             tool_tip.html(cont);
             tool_tip.show();
+            d3.select(this).attr("r",largeCircleSize);
         })
         .on("mouseout", function (d, i) {
             d3.select(this).attr("stroke", "#24541a");
             tool_tip.hide();
-
+            d3.select(this).attr("r",smallCircleSize);
         })
         // "#32a883" "#24541a"
 
