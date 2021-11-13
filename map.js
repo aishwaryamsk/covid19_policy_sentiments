@@ -412,12 +412,14 @@ function processDataSetsTimeline(twitterSentiments) {
 function drawTimeLine(svg, state) {
     let sentimentsYM = avgSentimentsByStateYearMonth[state];
 
+
     const monthParser = d3.timeParse("%Y,%m");
     let lineData = [];
 
     for (let yearMonth in sentimentsYM) {
         let dt = monthParser(yearMonth);
-        lineData.push({ date: dt, sentiment: sentimentsYM[yearMonth] });
+
+        lineData.push({ date: dt, sentiment: sentimentsYM[yearMonth], ts: dt.getTime()});
     }
 
     let timeline_g = svg.append("g")
@@ -491,13 +493,34 @@ function drawTimeLine(svg, state) {
     //     .attr("fill", function (d) { return colorScale(d.sentiment) });
 
     // draw circles for policies
+    console.log(lineData);
     let policyData = usPoliciesByState[state];
     timeline_g.selectAll(".dot")
         .data(policyData)
         .enter().append("circle") 
         .attr("class", "dot")
         .attr("cx", function (d, i) { return xScale(d["Date"]) })
-        .attr("cy", function (d) { return 100; })
+        .attr("cy", function (d) { 
+            let ts = d["Date"].getTime();
+            if (ts <= lineData[0].ts) {
+                return yScale(lineData[0].sentiment);
+            } else if (ts >= lineData[lineData.length-1].ts) {
+                return yScale(lineData[lineData.length-1].sentiment);
+            }
+            for (let i = 1; i < lineData.length; i++) {
+                let lts = lineData[i-1].ts;
+                let rts = lineData[i].ts;
+                if (ts >= lts && ts <= rts) {
+                    // interpolate
+                    console.log(lts + ";" + ts + ";" + rts);
+                    let delta = (ts-lts) / (rts-lts);
+                    let left = lineData[i-1].sentiment;
+                    let right = lineData[i].sentiment;
+                    console.log(delta + "=" + left + "=" + right);
+                    return yScale(left + delta*(right-left));
+                }
+            }
+            return 100; })
         .attr("r", 12)
         .attr("fill", "#24541a")
         .on("mouseover",function (d, i) {d3.select(this).attr("fill", "#32a883");})
