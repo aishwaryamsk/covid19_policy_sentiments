@@ -410,6 +410,8 @@ function processDataSetsTimeline(twitterSentiments) {
 }
 
 function drawTimeLine(svg, state) {
+
+
     let sentimentsYM = avgSentimentsByStateYearMonth[state];
 
 
@@ -423,6 +425,7 @@ function drawTimeLine(svg, state) {
     }
 
     let timeline_g = svg.append("g")
+        .attr("id","timeline")
         .attr("transform",
             "translate(" + margin.left + "," + margin.top + ")");
 
@@ -493,8 +496,24 @@ function drawTimeLine(svg, state) {
     //     .attr("fill", function (d) { return colorScale(d.sentiment) });
 
     // draw circles for policies
-    console.log(lineData);
+    // create a tooltip
+    let tool_tip = d3.tip()
+        .attr("class", "d3-tip")
+        .attr("id","tooltip")
+        .offset([-8, 0])
+        .html("(tool_tip)")
+        .style("background-color", "white")
+        .style("border", "solid")
+        .style("border-width", "2px")
+        .style("border-radius", "5px")
+        .style("padding", "5px")
+        .style("font-size", "24px")
+    svg.call(tool_tip);
+
     let policyData = usPoliciesByState[state];
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     timeline_g.selectAll(".dot")
         .data(policyData)
         .enter().append("circle") 
@@ -512,19 +531,32 @@ function drawTimeLine(svg, state) {
                 let rts = lineData[i].ts;
                 if (ts >= lts && ts <= rts) {
                     // interpolate
-                    console.log(lts + ";" + ts + ";" + rts);
                     let delta = (ts-lts) / (rts-lts);
                     let left = lineData[i-1].sentiment;
                     let right = lineData[i].sentiment;
-                    console.log(delta + "=" + left + "=" + right);
                     return yScale(left + delta*(right-left));
                 }
             }
             return 100; })
-        .attr("r", 12)
-        .attr("fill", "#24541a")
-        .on("mouseover",function (d, i) {d3.select(this).attr("fill", "#32a883");})
-        .on("mouseout", function (d, i) {d3.select(this).attr("fill", "#24541a");})
+        .attr("r", 9)
+        .attr("fill", "#ffffff")
+        .attr("stroke", "#24541a")
+        .attr("stroke-width", 2.5)
+        .on("mouseover",function (d, i) {
+            d3.select(this).attr("stroke", "#32a883");
+            let cont = d.mmddyyyy + "<br>";
+            // make it multiple lines
+            let lineMaxLen = 40; // maximum 40 chars per line
+            cont += getMultipleLinesHTML(d["Action Taken"], lineMaxLen);
+            tool_tip.html(cont);
+            tool_tip.show();
+        })
+        .on("mouseout", function (d, i) {
+            d3.select(this).attr("stroke", "#24541a");
+            tool_tip.hide();
+
+        })
+        // "#32a883" "#24541a"
 
     // add title
 
@@ -540,6 +572,49 @@ function drawTimeLine(svg, state) {
         .attr("transform", "translate(" + 0.85 * (width) + "," + 0.77 * (height) + ")")
         .call(legend); */
 
+}
+
+function getMultipleLinesHTML(noHTMLText, lineMaxLen) {
+    if (lineMaxLen <= 2) {
+        return "";
+    }
+    let tokens = noHTMLText.split(' ').filter(function(e){return e!="";});
+    // let ret = "";
+    // for (let i = 0; i < noHTMLText.length; i += lineMaxLen) {
+    //     ret += noHTMLText.substring(i, i+lineMaxLen) + "<br>";
+    // }
+    let ret = "";
+    let currentLine = "";
+    let i = 0;
+    while (i < tokens.length) {
+        let token = tokens[i];
+        let j = 0;
+        if (currentLine.length == 0) {
+            while ((token.length-j) > lineMaxLen) {
+                ret += token.substring(j, j+lineMaxLen-1) + "-<br>";
+                j += lineMaxLen-1;
+            }
+            currentLine += token.substring(j);
+            i += 1;
+        } else {
+            let remaining = lineMaxLen - currentLine.length - 1;
+            if (token.length <= remaining) {
+                currentLine += " " + token;
+                i += 1;
+            } else {
+                ret += currentLine + "<br>";
+                currentLine = "";
+                // don't increase i
+            }
+        }
+    }
+    if (currentLine.length > 0) {
+        ret += currentLine + " <br>";
+        currentLine = "";
+    }
+
+
+    return ret;
 }
 
 function processPolicies(usPoliciesData) {
@@ -560,8 +635,11 @@ function processPolicies(usPoliciesData) {
         if (!(state in usPoliciesByState)) {
             usPoliciesByState[state] = [];
         }
-        let tmp = {"Date": policyDateParser(usPoliciesData[i].Date),
-                   "Action Taken": usPoliciesData[i]["Action Taken"]
+        let tmpDate = policyDateParser(usPoliciesData[i].Date);
+        let tmp = {"Date": tmpDate,
+                   "Action Taken": usPoliciesData[i]["Action Taken"],
+                   "yyyymmdd": usPoliciesData[i].Date,
+                   "mmddyyyy": (tmpDate.getMonth()+1) + '/' + tmpDate.getDate() + '/' + tmpDate.getFullYear()
                     };
         usPoliciesByState[state].push(tmp);
     }
