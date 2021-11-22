@@ -1,4 +1,4 @@
-let width = window.innerWidth, height = window.innerHeight, active = d3.select(null);
+let width = window.innerWidth-150, height = window.innerHeight, active = d3.select(null);
 
 // Timeline // for both map and line - 50% height each
 let timeline_width = window.innerWidth, timeline_height = window.innerHeight / 2;
@@ -21,6 +21,8 @@ let usAbbreviationsDict;
 let map_g;
 let features;
 let usPoliciesByState;
+
+let states;
 
 
 let avgSentimentsByState;
@@ -54,6 +56,7 @@ Promise.all([
     usAbbreviationsDictInit();
     processDataSets(data[2]);
     processDataSetsTimeline(data[2]);
+
     processDataSetsCovid(data[3]);
     console.log("covid by state processed");
     processPolicies(data[4]);
@@ -65,28 +68,24 @@ Promise.all([
     legend = getSentimentsLegend(colorScale);
 
     // Map
-    svg_map = d3.select("body").append("svg")
-        .attr('id', 'map')
+    svg_map = d3.select("#map")
         .attr("width", width)
         .attr("height", height);
     drawMap(svg_map, us);
+
+    // Add legend
+    addLegend('#legend');
 
 
     // Timeline
     svg_timeline = d3.select("body").append("svg")
         .attr('id', 'timeline')
-        .attr("width", width)
+        .attr("width", timeline_width)
         .attr("height", timeline_height);
     svg_covid_timeline = d3.select("body").append("svg")
         .attr('id', 'timeline_covid')
         .attr("width", width)
         .attr("height", timeline_height);
-
-    // Hide timeline until user clicks on state
-    /* d3.select('#timeline').style({
-        "opacity": 0,
-        "display": "none"
-    }); */
 
     d3.select('#timeline').style("opacity", 0).style("display", "none");
 
@@ -125,7 +124,9 @@ function drawMap(svg, us) {
         .attr("fill", function (d) {
             // Associated sentiment for this state
             let code = getCountryObj(d.id).code;
-            return colorScale(avgSentimentsByState[code]);
+            // Remove DC - District of Columbia is not a state
+            if (code != 'DC')
+                return colorScale(avgSentimentsByState[code]);
         })
         /* .on('mouseover', tip.show)
         .on('mouseout', tip.hide) */
@@ -140,16 +141,22 @@ function drawMap(svg, us) {
 
     //map_g.call(tip);
 
+
     // Add State labels
-    let stateLabels = svg.append("g")
-        .selectAll("text")
+
+    //addStateLabels(map_g, features);
+    svg.append("g")
+        .selectAll("state-names")
         .data(features)
         .enter()
         .append("text")
+        .attr("id", "states")
         .attr('class', 'state-names')
-        .attr("text-anchor", "middle")
         .text(function (d) {
-            return getCountryObj(d.id).code;
+            let code = getCountryObj(d.id).code;
+            // Remove DC - District of Columbia is not a state
+            if (code != 'DC')
+                return code;
         })
         .attr("x", function (d) {
             let c = path.centroid(d)
@@ -165,47 +172,38 @@ function drawMap(svg, us) {
         .attr('fill', '#484848')
         .attr("font-size", "10px");
 
-    // Create the force layout with a slightly weak charge
-    /* var force = d3.layout.force()
-        .nodes(labels)
-        .charge(-20)
-        .gravity(0)
-        .chargeDistance(width / 8)
-        .size([width, height]); */
-
-    /* let force = d3.forceSimulation()
-        .nodes(usAbbreviations)
-        //.force("link", d3.forceLink(links).distance(100))
-        //.force('center', d3.forceCenter(width / 2, height / 2))
-        //.force("x", d3.forceX())
-        //.force("y", d3.forceY())
-        .force("charge", d3.forceManyBody().strength(-20))
-        .alphaTarget(1) */
-    //.on("tick", tick);
-
-    /* force.on("tick", function (e) {
-            var k = .1 * e.alpha;
-            stateLebels.forEach(function (o, j) {
-                // The change in the position is proportional to the distance
-                // between the label and the corresponding place (foci)
-                o.y += (foci[j].y - o.y) * k;
-                o.x += (foci[j].x - o.x) * k;
-            });
-    
-            // Update the position of the text element
-            svg.selectAll("text.state-names")
-                .attr("x", function (d) { return d.x; })
-                .attr("y", function (d) { return d.y; });
-        }); */
-
-    svg.append("g")
-        .attr("class", "legend")
-        //.attr("transform", "translate(" + 0.73 * (width) + "," + 0.6 * (height) + ")")
-        .attr("transform", "translate(" + 0.8 * (width) + "," + 0.2 * (height) + ")")
-        .call(legend);
-
-
 }
+
+
+function addStateLabels(svg, features) {
+    svg.append("g")
+        .selectAll("stateText")
+        .data(features)
+        .enter()
+        .append("text")
+        .attr("id", "states")
+        .attr('class', 'stateText')
+        .text(function (d) {
+            let code = getCountryObj(d.id).code;
+            // Remove DC - District of Columbia is not a state
+            if (code != 'DC')
+                return code;
+        })
+        .attr("x", function (d) {
+            let c = path.centroid(d)
+            if (c[0])
+                return c[0];
+        })
+        .attr("y", function (d) {
+            let c = path.centroid(d)
+            if (c[1])
+                return c[1];
+        })
+        .attr("text-anchor", "middle")
+        .attr('fill', '#484848')
+        .attr("font-size", "10px");
+}
+
 
 function getCountryObj(id) {
     let country = null;
@@ -215,12 +213,6 @@ function getCountryObj(id) {
     });
     return country;
 }
-
-/* function handleStateMouseOver(d, i) {
-    let centroid = path.centroid(d)
-    /* d3.select(this)
-    .attr("transform", "translate(" + [-15,-15] + ") scale(" + 1.1 + ")")
-} */
 
 
 // Zoom to state
@@ -245,19 +237,13 @@ function handleStateClick(d, i) {
 
     d3.selectAll('.state-names').style("display", "none");
 
-    // Fade legend
-    d3.select('.legend')
-        .transition()
-        .duration(zoomStateTime/2)
-        .style("opacity", 0);
-
     // Fade all states
     d3.selectAll(".state > path")
         .transition()
         .duration(zoomStateTime)
         .style("opacity", 0);
 
-    
+
 
     // Keep selected state as opaque all states to white
     let activeState = d3.select(this);
@@ -312,12 +298,6 @@ function reset() {
         .duration(zoomStateTime)
         .style("opacity", 1)
 
-    // Show legend
-    d3.select('.legend')
-        .transition()
-        .duration(zoomStateTime)
-        .style("opacity", 1);
-
     // Transition to make the border lines thicker (or, back to normal)
     // and remove transformations
     map_g.transition()
@@ -347,20 +327,21 @@ function reset() {
     active = d3.select(null);
 }
 
-function getColorScale() {
-    return d3.scaleQuantile()
-        .domain([-1, 1])
-        .range(['#ef8a62', '#deebf7', '#67a9cf']);
-}
 
-function getSentimentsLegend(colorScale) {
-    return d3.legendColor()
-        //.labelFormat(d3.format(".2f"))
-        .labels(['Negative', 'Neutral', 'Positive'])
-        .ascending(true)
-        .title('Average Sentiment')
-        .scale(colorScale);
-}
+// function getColorScale() {
+//     return d3.scaleQuantile()
+//         .domain([-1, 1])
+//         .range(['#ef8a62', '#deebf7', '#67a9cf']);
+// }
+
+// function getSentimentsLegend(colorScale) {
+//     return d3.legendColor()
+//         //.labelFormat(d3.format(".2f"))
+//         .labels(['Negative', 'Neutral', 'Positive'])
+//         .ascending(true)
+//         .title('Average Sentiment')
+//         .scale(colorScale);
+// }
 
 
 
@@ -413,8 +394,6 @@ function processDataSets(twitterSentiments) {
         avgSentimentsByState[state] = avg(cumulativeSentimentsByState[state]['sentiment']);
     }
 }
-
-
 
 
 function usAbbreviationsDictInit() {
@@ -532,7 +511,7 @@ function drawTimeLine(svg, state) {
             "translate(" + margin.left + "," + margin.top*2 + ")");
 
     let xScale = d3.scaleTime()
-        .range([margin.left, width - margin.right])
+        .range([margin.left, timeline_width - margin.right])
         .domain(d3.extent(lineData, function (d) { return d.date }));
 
     let yScale = d3.scaleLinear()
@@ -573,7 +552,7 @@ function drawTimeLine(svg, state) {
         .style("font-size", "22px")
         .attr("text-anchor", "middle")
         .attr("class", "x label")
-        .attr("x", width * 0.5)
+        .attr("x", timeline_width * 0.5)
         .attr("y", timeline_height - 24);
 
     // y axis
@@ -799,8 +778,9 @@ function drawTimeLineCovid(svg, state) {
     timeline_g.append("text")
         .attr("text-anchor", "middle")
         .style("font-size", "28px")
-        .attr("x", width * 0.5)
+        .attr("x", timeline_width * 0.5)
         .attr("y", 32)
+
         .text("Daily New Cases: " + usAbbreviationsDict[state]);
 
     /* svg.append("g")
