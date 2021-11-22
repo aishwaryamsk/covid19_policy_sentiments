@@ -8,6 +8,7 @@ var margin = { top: 15, right: 70, bottom: 60, left: 50 }
 let geojson = 'https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson';
 let usStatesDir = '/us.json';
 let usAbbrevDir = '/us-state-names.tsv';
+let usPolicyDir = '/states_policies_clean.tsv';
 
 // map data 
 // all time twitter sentiments
@@ -19,6 +20,7 @@ let usAbbreviations;
 let usAbbreviationsDict;
 let map_g;
 let features;
+let usPoliciesByState;
 
 
 let avgSentimentsByState;
@@ -45,6 +47,7 @@ Promise.all([
     d3.tsv(usAbbrevDir),
     d3.csv(twitterSentimentsDir),
     d3.csv(covidCasesDir)
+    d3.tsv(usPolicyDir)
 ]).then(data => {
     let us = data[0];
     usAbbreviations = data[1];
@@ -53,6 +56,7 @@ Promise.all([
     processDataSetsTimeline(data[2]);
     processDataSetsCovid(data[3]);
     console.log("covid by state processed");
+    processPolicies(data[4]);
 
 
     // LEGEND
@@ -485,11 +489,19 @@ function processDataSetsTimeline(twitterSentiments) {
 
 
 function drawTimeLine(svg, state) {
-    console.log("Drawing timeline", state)
+// <<<<<<< brando
+//     console.log("Drawing timeline", state)
+// =======
+//     var elementExists = document.getElementById("timeline_g");
+//     if (elementExists) {
+//         elementExists.remove();
+//     }
+
+// >>>>>>> main
     let sentimentsYM = avgSentimentsByStateYearMonth[state];
     let sentimentsYMD = avgSentimentsByStateYearMonthDay[state];
 
-    // const dayParser = d3.timeParse("")
+
     const monthParser = d3.timeParse("%Y,%m");
     const dayParser = d3.timeParse("%Y,%m,%d");
     let lineDataDay = [];
@@ -497,7 +509,8 @@ function drawTimeLine(svg, state) {
 
     for (let yearMonth in sentimentsYM) {
         let dt = monthParser(yearMonth);
-        lineData.push({ date: dt, sentiment: sentimentsYM[yearMonth] });
+
+        lineData.push({ date: dt, sentiment: sentimentsYM[yearMonth], ts: dt.getTime()});
     }
     for (let yearMonthDay in sentimentsYMD) {
         let dt = dayParser(yearMonthDay);
@@ -511,6 +524,7 @@ function drawTimeLine(svg, state) {
     lineDataDay = lineDataDay.sort(sortByDateAscending);
 
     let timeline_g = svg.append("g")
+        .attr("id","timeline_g")
         .attr("transform",
             "translate(" + margin.left + "," + margin.top + ")");
     let timeline_g2 = svg.append("g")
@@ -589,16 +603,82 @@ function drawTimeLine(svg, state) {
         );
 
     // draw circles for data points
-    //var colorScale = getColorScale();
 
+    // timeline_g.selectAll(".dot")
+    //     .data(lineData)
+    //     .enter().append("circle") // Uses the enter().append() method
+    //     .attr("class", "dot") // Assign a class for styling
+    //     .attr("cx", function (d, i) { return xScale(d.date) })
+    //     .attr("cy", function (d) { return yScale(d.sentiment) })
+    //     .attr("r", 12)
+    //     .attr("fill", function (d) { return colorScale(d.sentiment) });
+
+    // draw circles for policies
+    // create a tooltip
+    let tool_tip = d3.tip()
+        .attr("class", "d3-tip")
+        .attr("id","tooltip")
+        .offset([-8, 0])
+        .html("(tool_tip)")
+        .style("background-color", "white")
+        .style("border", "solid")
+        .style("border-width", "2px")
+        .style("border-radius", "5px")
+        .style("padding", "5px")
+        .style("font-size", "24px")
+    svg.call(tool_tip);
+
+    let policyData = usPoliciesByState[state];
+
+    let smallCircleSize = 9;
+    let largeCircleSize = 20;
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     timeline_g.selectAll(".dot")
-        .data(lineData)
-        .enter().append("circle") // Uses the enter().append() method
-        .attr("class", "dot") // Assign a class for styling
-        .attr("cx", function (d, i) { return xScale(d.date) })
-        .attr("cy", function (d) { return yScale(d.sentiment) })
-        .attr("r", 12)
-        .attr("fill", function (d) { return colorScale(d.sentiment) });
+        .data(policyData)
+        .enter().append("circle") 
+        .attr("class", "dot")
+        .attr("cx", function (d, i) { return xScale(d["Date"]) })
+        .attr("cy", function (d) { 
+            let ts = d["Date"].getTime();
+            if (ts <= lineData[0].ts) {
+                return yScale(lineData[0].sentiment);
+            } else if (ts >= lineData[lineData.length-1].ts) {
+                return yScale(lineData[lineData.length-1].sentiment);
+            }
+            for (let i = 1; i < lineData.length; i++) {
+                let lts = lineData[i-1].ts;
+                let rts = lineData[i].ts;
+                if (ts >= lts && ts <= rts) {
+                    // interpolate
+                    let delta = (ts-lts) / (rts-lts);
+                    let left = lineData[i-1].sentiment;
+                    let right = lineData[i].sentiment;
+                    return yScale(left + delta*(right-left));
+                }
+            }
+            return 100; })
+        .attr("r", smallCircleSize)
+        .attr("fill", "#ffffff")
+        .attr("stroke", "#24541a")
+        .attr("stroke-width", 2.5)
+        .on("mouseover",function (d, i) {
+            d3.select(this).attr("stroke", "#32a883");
+            let cont = d.mmddyyyy + "<br>";
+            // make it multiple lines
+            let lineMaxLen = 40; // maximum 40 chars per line
+            cont += getMultipleLinesHTML(d["Action Taken"], lineMaxLen);
+            tool_tip.html(cont);
+            tool_tip.show();
+            d3.select(this).attr("r",largeCircleSize);
+        })
+        .on("mouseout", function (d, i) {
+            d3.select(this).attr("stroke", "#24541a");
+            tool_tip.hide();
+            d3.select(this).attr("r",smallCircleSize);
+        })
+        // "#32a883" "#24541a"
 
     // add title
 
@@ -727,5 +807,91 @@ function drawTimeLineCovid(svg, state) {
         .attr("class", "legend")
         .attr("transform", "translate(" + 0.85 * (width) + "," + 0.77 * (height) + ")")
         .call(legend); */
+}
 
+
+
+function getMultipleLinesHTML(noHTMLText, lineMaxLen) {
+    if (lineMaxLen <= 2) {
+        return "";
+    }
+    let tokens = noHTMLText.split(' ').filter(function(e){return e!="";});
+    // let ret = "";
+    // for (let i = 0; i < noHTMLText.length; i += lineMaxLen) {
+    //     ret += noHTMLText.substring(i, i+lineMaxLen) + "<br>";
+    // }
+    let ret = "";
+    let currentLine = "";
+    let i = 0;
+    while (i < tokens.length) {
+        let token = tokens[i];
+        let j = 0;
+        if (currentLine.length == 0) {
+            while ((token.length-j) > lineMaxLen) {
+                ret += token.substring(j, j+lineMaxLen-1) + "-<br>";
+                j += lineMaxLen-1;
+            }
+            currentLine += token.substring(j);
+            i += 1;
+        } else {
+            let remaining = lineMaxLen - currentLine.length - 1;
+            if (token.length <= remaining) {
+                currentLine += " " + token;
+                i += 1;
+            } else {
+                ret += currentLine + "<br>";
+                currentLine = "";
+                // don't increase i
+            }
+        }
+    }
+    if (currentLine.length > 0) {
+        ret += currentLine + " <br>";
+        currentLine = "";
+    }
+
+
+    return ret;
+}
+
+function processPolicies(usPoliciesData) {
+    let usAbbreviationsDictRev = {};
+    for (let stateAbbr in usAbbreviationsDict) {
+        usAbbreviationsDictRev[usAbbreviationsDict[stateAbbr]] = stateAbbr;
+    }
+
+    const policyDateParser = d3.timeParse("%Y/%m/%d");
+    usPoliciesByState = {};
+    for (let i = 0; i < usPoliciesData.length; i++) {
+        let stateFullname = usPoliciesData[i].State;
+        if (!(stateFullname in usAbbreviationsDictRev)) {
+            console.log("unknown state: " + stateFullname)
+            continue;
+        }
+        let state = usAbbreviationsDictRev[stateFullname];
+        if (!(state in usPoliciesByState)) {
+            usPoliciesByState[state] = [];
+        }
+        let tmpDate = policyDateParser(usPoliciesData[i].Date);
+        let tmp = {"Date": tmpDate,
+                   "Action Taken": usPoliciesData[i]["Action Taken"],
+                   "yyyymmdd": usPoliciesData[i].Date,
+                   "mmddyyyy": (tmpDate.getMonth()+1) + '/' + tmpDate.getDate() + '/' + tmpDate.getFullYear()
+                    };
+        usPoliciesByState[state].push(tmp);
+    }
+    // sort by date
+    for (let state in usPoliciesByState) {
+        usPoliciesByState[state].sort(function(a, b) {
+            let keyA = a["Date"];
+            let keyB = b["Date"];
+            if (keyA < keyB) {
+                return 1;
+            }
+            if (keyA > keyB) {
+                return -1;
+            }
+            return 0;
+        });
+    }
 }
