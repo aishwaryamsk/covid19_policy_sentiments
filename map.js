@@ -28,7 +28,7 @@ let states;
 let avgSentimentsByState;
 let avgSentimentsByStateYearMonth;
 let covidByState;
-let colorScale;
+// let colorScale;
 let legend;
 
 // SVGs
@@ -64,8 +64,8 @@ Promise.all([
 
     // LEGEND
     /* Define color scale */
-    colorScale = getColorScale();
-    legend = getSentimentsLegend(colorScale);
+    // colorScale = getColorScale();
+    // legend = getSentimentsLegend(colorScale);
 
     // Map
     svg_map = d3.select("#map")
@@ -334,20 +334,20 @@ function reset() {
 }
 
 
-// function getColorScale() {
-//     return d3.scaleQuantile()
-//         .domain([-1, 1])
-//         .range(['#ef8a62', '#deebf7', '#67a9cf']);
-// }
+function getColorScale() {
+    return d3.scaleQuantile()
+        .domain([-1, 1])
+        .range(['#ef8a62', '#deebf7', '#67a9cf']);
+}
 
-// function getSentimentsLegend(colorScale) {
-//     return d3.legendColor()
-//         //.labelFormat(d3.format(".2f"))
-//         .labels(['Negative', 'Neutral', 'Positive'])
-//         .ascending(true)
-//         .title('Average Sentiment')
-//         .scale(colorScale);
-// }
+function getSentimentsLegend(colorScale) {
+    return d3.legendColor()
+        //.labelFormat(d3.format(".2f"))
+        .labels(['Negative', 'Neutral', 'Positive'])
+        .ascending(true)
+        .title('Average Sentiment')
+        .scale(colorScale);
+}
 
 
 
