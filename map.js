@@ -46,7 +46,7 @@ Promise.all([
     d3.json(usStatesDir),
     d3.tsv(usAbbrevDir),
     d3.csv(twitterSentimentsDir),
-    d3.csv(covidCasesDir)
+    d3.csv(covidCasesDir),
     d3.tsv(usPolicyDir)
 ]).then(data => {
     let us = data[0];
@@ -287,6 +287,12 @@ function handleStateClick(d, i) {
       while (myNode.firstChild) {
         myNode.removeChild(myNode.lastChild);
       }
+    //Remove timeline children. 
+    const myNode2 = document.getElementById("timeline_covid");
+      while (myNode2.firstChild) {
+        myNode2.removeChild(myNode2.lastChild);
+      }
+
     /* SHOW TIMELINE */
     drawTimeLine(svg_timeline, getCountryObj(features[i].id).code);
     drawTimeLineCovid(svg_covid_timeline, getCountryObj(features[i].id).code);
