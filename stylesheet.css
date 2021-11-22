@@ -22,3 +22,18 @@ body{
 .legend {
   font-size: 14px;
 }
+
+.state-names {
+  fill: #484848;
+  font-size:10px;
+  font-family: "Times New Roman", Times, serif;
+}
+
+.legend-axis {
+  color: #484848;
+  font-size: 11px;
+}
+
+#legend {
+  display: inline-block;
+}
