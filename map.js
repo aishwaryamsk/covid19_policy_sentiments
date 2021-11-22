@@ -8,25 +8,31 @@ var margin = { top: 15, right: 70, bottom: 60, left: 50 }
 let geojson = 'https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson';
 let usStatesDir = '/us.json';
 let usAbbrevDir = '/us-state-names.tsv';
+let usPolicyDir = '/states_policies_clean.tsv';
 
 // map data 
 // all time twitter sentiments
 let twitterSentimentsDir = '/twitter_sentiments_by_state.csv';
+let covidCasesDir = '/United_States_COVID-19_Cases_and_Deaths_all_States_over_Time.csv'
 
 // Store read data
 let usAbbreviations;
 let usAbbreviationsDict;
 let map_g;
 let features;
+let usPoliciesByState;
 
 let states;
 
 
 let avgSentimentsByState;
 let avgSentimentsByStateYearMonth;
+let covidByState;
+let colorScale;
+let legend;
 
 // SVGs
-let svg_map, svg_timeline;
+let svg_map, svg_timeline, svg_covid_timeline;
 
 // Transition
 let zoomStateTime = 750;
@@ -41,15 +47,25 @@ let path = d3.geoPath().projection(projection);
 Promise.all([
     d3.json(usStatesDir),
     d3.tsv(usAbbrevDir),
-    d3.csv(twitterSentimentsDir)
+    d3.csv(twitterSentimentsDir),
+    d3.csv(covidCasesDir)
+    d3.tsv(usPolicyDir)
 ]).then(data => {
     let us = data[0];
     usAbbreviations = data[1];
     usAbbreviationsDictInit();
     processDataSets(data[2]);
     processDataSetsTimeline(data[2]);
-   
-    console.log(window.innerHeight, height, timeline_height)
+
+    processDataSetsCovid(data[3]);
+    console.log("covid by state processed");
+    processPolicies(data[4]);
+
+
+    // LEGEND
+    /* Define color scale */
+    colorScale = getColorScale();
+    legend = getSentimentsLegend(colorScale);
 
     // Map
     svg_map = d3.select("#map")
@@ -65,6 +81,10 @@ Promise.all([
     svg_timeline = d3.select("body").append("svg")
         .attr('id', 'timeline')
         .attr("width", timeline_width)
+        .attr("height", timeline_height);
+    svg_covid_timeline = d3.select("body").append("svg")
+        .attr('id', 'timeline_covid')
+        .attr("width", width)
         .attr("height", timeline_height);
 
     d3.select('#timeline').style("opacity", 0).style("display", "none");
@@ -248,8 +268,14 @@ function handleStateClick(d, i) {
         .duration(zoomStateTime)
         .attr('height', timeline_height);
 
+    //Remove timeline children. 
+    const myNode = document.getElementById("timeline");
+      while (myNode.firstChild) {
+        myNode.removeChild(myNode.lastChild);
+      }
     /* SHOW TIMELINE */
     drawTimeLine(svg_timeline, getCountryObj(features[i].id).code);
+    drawTimeLineCovid(svg_covid_timeline, getCountryObj(features[i].id).code);
     // Make timeline opaque
     d3.select('#timeline')
         .style("display", "inline")
@@ -301,8 +327,57 @@ function reset() {
     active = d3.select(null);
 }
 
+
+// function getColorScale() {
+//     return d3.scaleQuantile()
+//         .domain([-1, 1])
+//         .range(['#ef8a62', '#deebf7', '#67a9cf']);
+// }
+
+// function getSentimentsLegend(colorScale) {
+//     return d3.legendColor()
+//         //.labelFormat(d3.format(".2f"))
+//         .labels(['Negative', 'Neutral', 'Positive'])
+//         .ascending(true)
+//         .title('Average Sentiment')
+//         .scale(colorScale);
+// }
+
+
+
+function processDataSetsCovid(covidData) {
+    // Compute cumulative sentiments by state
+    console.log('printing covid data')
+    console.log(covidData)
+    const parseTime = d3.timeParse("%Y/%e/%d");
+
+    covidByState = {};
+    for (let i = 0; i < covidData.length; i++) {
+        if (!covidByState[covidData[i].state_abbr]) {
+            // console.log("date", covidData[i].submission_date_format);
+            // console.log(parseTime(covidData[i].submission_date_format));
+            covidByState[covidData[i].state_abbr] = 
+                { 'dates': [+parseTime(covidData[i].submission_date_format)], 'new_cases': [+covidData[i].new_case]}
+        } else {
+            covidByState[covidData[i].state_abbr]['dates'].push(+parseTime(covidData[i].submission_date_format))
+            covidByState[covidData[i].state_abbr]['new_cases'].push(+covidData[i].new_case)
+            // console.log(parseTime(covidData[i].submission_date_format));
+        }
+    }
+    console.log(covidByState)
+
+}
+
+
+
+
+
+
+
 function processDataSets(twitterSentiments) {
     // Compute cumulative sentiments by state
+    console.log("printing twitter data")
+    console.log(twitterSentiments)
     let cumulativeSentimentsByState = {};
     for (let i = 0; i < twitterSentiments.length; i++) {
         if (!cumulativeSentimentsByState[twitterSentiments[i].state]) {
@@ -332,13 +407,18 @@ function usAbbreviationsDictInit() {
 function processDataSetsTimeline(twitterSentiments) {
     // Compute cumulative sentiments by state and Year, Month
     let cumulativeSentimentsByStateYearMonth = {};
+    let cumulativeSentimentsByStateYearMonthDay = {};
     for (let i = 0; i < twitterSentiments.length; i++) {
         // for (let i = 0; i < 10; i++) {
         let tmpDate = new Date(parseInt(twitterSentiments[i].timestamp + '000'));
         let year = tmpDate.getFullYear();
         let month = tmpDate.getMonth() + 1;
+        let day = tmpDate.getDay();
         let yearMonth = year.toString() + "," + month.toString();
+        let yearMonthDay = yearMonth + "," + day.toString();
 
+
+        //---------- MONTH
         if (!cumulativeSentimentsByStateYearMonth[twitterSentiments[i].state]) {
             cumulativeSentimentsByStateYearMonth[twitterSentiments[i].state] = {};
         }
@@ -349,6 +429,20 @@ function processDataSetsTimeline(twitterSentiments) {
             cumulativeSentimentsByStateYearMonth[twitterSentiments[i].state][yearMonth]['sentiment']
                 .push(+twitterSentiments[i].sentiment)
         }
+
+
+        //----------DAY
+        if (!cumulativeSentimentsByStateYearMonthDay[twitterSentiments[i].state]) {
+            cumulativeSentimentsByStateYearMonthDay[twitterSentiments[i].state] = {};
+        }
+        if (!cumulativeSentimentsByStateYearMonthDay[twitterSentiments[i].state][yearMonthDay]) {
+            cumulativeSentimentsByStateYearMonthDay[twitterSentiments[i].state][yearMonthDay] =
+                { 'sentiment': [+twitterSentiments[i].sentiment] };
+        } else {
+            cumulativeSentimentsByStateYearMonthDay[twitterSentiments[i].state][yearMonthDay]['sentiment']
+                .push(+twitterSentiments[i].sentiment)
+        }
+
     }
     // Compute average sentiments by state and Year, Month
     const avg = l => l.reduce((prev, cur) => prev + cur) / l.length;
@@ -359,22 +453,62 @@ function processDataSetsTimeline(twitterSentiments) {
             avgSentimentsByStateYearMonth[state][yearMonth] = avg(cumulativeSentimentsByStateYearMonth[state][yearMonth]['sentiment']);
         }
     }
+    // Compute average sentiments by state and Year, Month, Day
+    avgSentimentsByStateYearMonthDay = {};
+    for (let state in cumulativeSentimentsByStateYearMonthDay) {
+        avgSentimentsByStateYearMonthDay[state] = {}
+        for (let yearMonthDay in cumulativeSentimentsByStateYearMonthDay[state]) {
+            avgSentimentsByStateYearMonthDay[state][yearMonthDay] = avg(cumulativeSentimentsByStateYearMonthDay[state][yearMonthDay]['sentiment']);
+        }
+    }
+
+
 }
 
+
+
 function drawTimeLine(svg, state) {
+// <<<<<<< brando
+//     console.log("Drawing timeline", state)
+// =======
+//     var elementExists = document.getElementById("timeline_g");
+//     if (elementExists) {
+//         elementExists.remove();
+//     }
+
+// >>>>>>> main
     let sentimentsYM = avgSentimentsByStateYearMonth[state];
+    let sentimentsYMD = avgSentimentsByStateYearMonthDay[state];
+
 
     const monthParser = d3.timeParse("%Y,%m");
+    const dayParser = d3.timeParse("%Y,%m,%d");
+    let lineDataDay = [];
     let lineData = [];
 
     for (let yearMonth in sentimentsYM) {
         let dt = monthParser(yearMonth);
-        lineData.push({ date: dt, sentiment: sentimentsYM[yearMonth] });
+
+        lineData.push({ date: dt, sentiment: sentimentsYM[yearMonth], ts: dt.getTime()});
+    }
+    for (let yearMonthDay in sentimentsYMD) {
+        let dt = dayParser(yearMonthDay);
+        lineDataDay.push({ date: dt, sentiment: sentimentsYMD[yearMonthDay] });
     }
 
+    function sortByDateAscending(a, b) {
+        return a.date - b.date;
+    }
+
+    lineDataDay = lineDataDay.sort(sortByDateAscending);
+
     let timeline_g = svg.append("g")
+        .attr("id","timeline_g")
         .attr("transform",
-            "translate(" + margin.left+ "," + margin.top + ")");
+            "translate(" + margin.left + "," + margin.top + ")");
+    let timeline_g2 = svg.append("g")
+        .attr("transform",
+            "translate(" + margin.left + "," + margin.top*2 + ")");
 
     let xScale = d3.scaleTime()
         .range([margin.left, timeline_width - margin.right])
@@ -384,14 +518,30 @@ function drawTimeLine(svg, state) {
         .range([timeline_height - margin.bottom, margin.top])
         .domain(d3.extent(lineData, function (d) { return d.sentiment }));
 
+    let xScale2 = d3.scaleTime()
+        .range([margin.left, width - margin.right])
+        .domain(d3.extent(lineDataDay, function (d) { return d.date }));
+
+    let yScale2 = d3.scaleLinear()
+        .range([timeline_height - margin.bottom, margin.top])
+        .domain(d3.extent(lineDataDay, function (d) { return d.sentiment }));
+
+
     let xaxis = d3.axisBottom()
         .ticks(d3.timeMonth.every(1))
         .tickFormat(d3.timeFormat('%b %y'))
         .scale(xScale);
+    let xaxis2 = d3.axisBottom()
+        .ticks(d3.timeDay.every(1))
+        .tickFormat(d3.timeFormat('%b %y'))
+        .scale(xScale2);
 
     let yaxis = d3.axisLeft()
         .ticks(10)
         .scale(yScale);
+    let yaxis2 = d3.axisLeft()
+        .ticks(10)
+        .scale(yScale2);
 
     // x axis
     let x_axis_obj = timeline_g.append("g")
@@ -433,14 +583,195 @@ function drawTimeLine(svg, state) {
 
     // draw circles for data points
 
+    // timeline_g.selectAll(".dot")
+    //     .data(lineData)
+    //     .enter().append("circle") // Uses the enter().append() method
+    //     .attr("class", "dot") // Assign a class for styling
+    //     .attr("cx", function (d, i) { return xScale(d.date) })
+    //     .attr("cy", function (d) { return yScale(d.sentiment) })
+    //     .attr("r", 12)
+    //     .attr("fill", function (d) { return colorScale(d.sentiment) });
+
+    // draw circles for policies
+    // create a tooltip
+    let tool_tip = d3.tip()
+        .attr("class", "d3-tip")
+        .attr("id","tooltip")
+        .offset([-8, 0])
+        .html("(tool_tip)")
+        .style("background-color", "white")
+        .style("border", "solid")
+        .style("border-width", "2px")
+        .style("border-radius", "5px")
+        .style("padding", "5px")
+        .style("font-size", "24px")
+    svg.call(tool_tip);
+
+    let policyData = usPoliciesByState[state];
+
+    let smallCircleSize = 9;
+    let largeCircleSize = 20;
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     timeline_g.selectAll(".dot")
-        .data(lineData)
+        .data(policyData)
+        .enter().append("circle") 
+        .attr("class", "dot")
+        .attr("cx", function (d, i) { return xScale(d["Date"]) })
+        .attr("cy", function (d) { 
+            let ts = d["Date"].getTime();
+            if (ts <= lineData[0].ts) {
+                return yScale(lineData[0].sentiment);
+            } else if (ts >= lineData[lineData.length-1].ts) {
+                return yScale(lineData[lineData.length-1].sentiment);
+            }
+            for (let i = 1; i < lineData.length; i++) {
+                let lts = lineData[i-1].ts;
+                let rts = lineData[i].ts;
+                if (ts >= lts && ts <= rts) {
+                    // interpolate
+                    let delta = (ts-lts) / (rts-lts);
+                    let left = lineData[i-1].sentiment;
+                    let right = lineData[i].sentiment;
+                    return yScale(left + delta*(right-left));
+                }
+            }
+            return 100; })
+        .attr("r", smallCircleSize)
+        .attr("fill", "#ffffff")
+        .attr("stroke", "#24541a")
+        .attr("stroke-width", 2.5)
+        .on("mouseover",function (d, i) {
+            d3.select(this).attr("stroke", "#32a883");
+            let cont = d.mmddyyyy + "<br>";
+            // make it multiple lines
+            let lineMaxLen = 40; // maximum 40 chars per line
+            cont += getMultipleLinesHTML(d["Action Taken"], lineMaxLen);
+            tool_tip.html(cont);
+            tool_tip.show();
+            d3.select(this).attr("r",largeCircleSize);
+        })
+        .on("mouseout", function (d, i) {
+            d3.select(this).attr("stroke", "#24541a");
+            tool_tip.hide();
+            d3.select(this).attr("r",smallCircleSize);
+        })
+        // "#32a883" "#24541a"
+
+    // add title
+
+    timeline_g.append("text")
+        .attr("text-anchor", "middle")
+        .style("font-size", "28px")
+        .attr("x", width * 0.5)
+        .attr("y", 32)
+        .text("average sentiments by month: " + usAbbreviationsDict[state]);
+
+    /* svg.append("g")
+        .attr("class", "legend")
+        .attr("transform", "translate(" + 0.85 * (width) + "," + 0.77 * (height) + ")")
+        .call(legend); */
+
+}
+
+
+
+
+
+function drawTimeLineCovid(svg, state) {
+    console.log("Drawing timeline", state)
+    let sentimentsYMD = covidByState[state];
+
+    // const dayParser = d3.timeParse("")
+    // const monthParser = d3.timeParse("%Y,%m");
+    // const dayParser = d3.timeParse("%Y,%m,%d");
+    let lineDataDay = [];
+
+    for(i=0; i<sentimentsYMD.length; i++) {
+        let dt = sentimentsYMD['dates'][i];
+        let new_cases = sentimentsYMD['new_cases'][i];
+        console.log(dt)
+        lineDataDay.push({ date: dt, cases: new_cases });
+    }
+
+    function sortByDateAscending(a, b) {
+        return a.date - b.date;
+    }
+
+    lineDataDay = lineDataDay.sort(sortByDateAscending);
+
+    let timeline_g = svg.append("g")
+        .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+   
+    let xScale = d3.scaleTime()
+        .range([margin.left, width - margin.right])
+        .domain(d3.extent(lineDataDay, function (d) { return d.date }));
+
+    let yScale = d3.scaleLinear()
+        .range([timeline_height - margin.bottom, margin.top])
+        .domain(d3.extent(lineDataDay, function (d) { return d.cases }));
+
+
+    let xaxis = d3.axisBottom()
+        .ticks(d3.timeDay.every(1))
+        .tickFormat(d3.timeFormat('%b %y'))
+        .scale(xScale);
+
+    let yaxis = d3.axisLeft()
+        .ticks(10)
+        .scale(yScale);
+
+    // x axis
+    let x_axis_obj = timeline_g.append("g")
+        .attr("transform", "translate(" + 0 + "," + (timeline_height - margin.bottom) + ")")
+        .call(xaxis);
+    timeline_g.append("text")
+        .text("Day")
+        .style("font-size", "22px")
+        .attr("text-anchor", "middle")
+        .attr("class", "x label")
+        .attr("x", width * 0.5)
+        .attr("y", timeline_height - 24);
+
+    // y axis
+    let y_axis_obj = timeline_g.append("g")
+        .attr("transform", "translate(" + margin.left + "," + 0 + ")")
+        .call(yaxis);
+    timeline_g.append("text")
+        .text("New Cases")
+        .style("font-size", "22px")
+        .attr("text-anchor", "middle")
+        .attr("class", "y label")
+        .attr("x", -timeline_height * 0.5)
+        .attr("y", 15)
+        .attr("transform", "rotate(-90)")
+
+    // draw lines
+    let lines_a = timeline_g.append("g");
+    lines_a
+        .append("path")
+        .datum(lineDataDay)
+        .attr("fill", "none")
+        .attr("stroke", "green")
+        .attr("stroke-width", 1.5)
+        .attr("d", d3.line()
+            .x(function (d) { return xScale(d.date) })
+            .y(function (d) { return yScale(d.cases) })
+        );
+
+    // draw circles for data points
+    //var colorScale = getColorScale();
+
+    timeline_g.selectAll(".dot")
+        .data(lineDataDay)
         .enter().append("circle") // Uses the enter().append() method
         .attr("class", "dot") // Assign a class for styling
         .attr("cx", function (d, i) { return xScale(d.date) })
-        .attr("cy", function (d) { return yScale(d.sentiment) })
+        .attr("cy", function (d) { return yScale(d.cases) })
         .attr("r", 12)
-        .attr("fill", function (d) { return colorScale(d.sentiment) });
+        .attr("fill", function (d) { return colorScale(d.cases) });
 
     // add title
 
@@ -449,5 +780,98 @@ function drawTimeLine(svg, state) {
         .style("font-size", "28px")
         .attr("x", timeline_width * 0.5)
         .attr("y", 32)
-        .text("average sentiments by month: " + usAbbreviationsDict[state]);
+
+        .text("Daily New Cases: " + usAbbreviationsDict[state]);
+
+    /* svg.append("g")
+        .attr("class", "legend")
+        .attr("transform", "translate(" + 0.85 * (width) + "," + 0.77 * (height) + ")")
+        .call(legend); */
+}
+
+
+
+function getMultipleLinesHTML(noHTMLText, lineMaxLen) {
+    if (lineMaxLen <= 2) {
+        return "";
+    }
+    let tokens = noHTMLText.split(' ').filter(function(e){return e!="";});
+    // let ret = "";
+    // for (let i = 0; i < noHTMLText.length; i += lineMaxLen) {
+    //     ret += noHTMLText.substring(i, i+lineMaxLen) + "<br>";
+    // }
+    let ret = "";
+    let currentLine = "";
+    let i = 0;
+    while (i < tokens.length) {
+        let token = tokens[i];
+        let j = 0;
+        if (currentLine.length == 0) {
+            while ((token.length-j) > lineMaxLen) {
+                ret += token.substring(j, j+lineMaxLen-1) + "-<br>";
+                j += lineMaxLen-1;
+            }
+            currentLine += token.substring(j);
+            i += 1;
+        } else {
+            let remaining = lineMaxLen - currentLine.length - 1;
+            if (token.length <= remaining) {
+                currentLine += " " + token;
+                i += 1;
+            } else {
+                ret += currentLine + "<br>";
+                currentLine = "";
+                // don't increase i
+            }
+        }
+    }
+    if (currentLine.length > 0) {
+        ret += currentLine + " <br>";
+        currentLine = "";
+    }
+
+
+    return ret;
+}
+
+function processPolicies(usPoliciesData) {
+    let usAbbreviationsDictRev = {};
+    for (let stateAbbr in usAbbreviationsDict) {
+        usAbbreviationsDictRev[usAbbreviationsDict[stateAbbr]] = stateAbbr;
+    }
+
+    const policyDateParser = d3.timeParse("%Y/%m/%d");
+    usPoliciesByState = {};
+    for (let i = 0; i < usPoliciesData.length; i++) {
+        let stateFullname = usPoliciesData[i].State;
+        if (!(stateFullname in usAbbreviationsDictRev)) {
+            console.log("unknown state: " + stateFullname)
+            continue;
+        }
+        let state = usAbbreviationsDictRev[stateFullname];
+        if (!(state in usPoliciesByState)) {
+            usPoliciesByState[state] = [];
+        }
+        let tmpDate = policyDateParser(usPoliciesData[i].Date);
+        let tmp = {"Date": tmpDate,
+                   "Action Taken": usPoliciesData[i]["Action Taken"],
+                   "yyyymmdd": usPoliciesData[i].Date,
+                   "mmddyyyy": (tmpDate.getMonth()+1) + '/' + tmpDate.getDate() + '/' + tmpDate.getFullYear()
+                    };
+        usPoliciesByState[state].push(tmp);
+    }
+    // sort by date
+    for (let state in usPoliciesByState) {
+        usPoliciesByState[state].sort(function(a, b) {
+            let keyA = a["Date"];
+            let keyB = b["Date"];
+            if (keyA < keyB) {
+                return 1;
+            }
+            if (keyA > keyB) {
+                return -1;
+            }
+            return 0;
+        });
+    }
 }
