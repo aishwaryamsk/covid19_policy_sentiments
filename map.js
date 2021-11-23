@@ -6,14 +6,15 @@ let timeline_width = window.innerWidth, timeline_height = window.innerHeight / 2
 var margin = { top: 15, right: 70, bottom: 60, left: 50 }
 
 let geojson = 'https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson';
-let usStatesDir = '/us.json';
-let usAbbrevDir = '/us-state-names.tsv';
-let usPolicyDir = '/states_policies_clean.tsv';
+let usStatesDir = '/datasets/us.json';
+let usAbbrevDir = '/datasets/us-state-names.tsv';
+let usPolicyDir = '/datasets/states_policies_clean.tsv';
+let sentimentsDir = '/datasets/all_twitter_data.tsv';
 
 // map data 
 // all time twitter sentiments
-let twitterSentimentsDir = '/twitter_sentiments_by_state.csv';
-let covidCasesDir = '/United_States_COVID-19_Cases_and_Deaths_all_States_over_Time.csv'
+let twitterSentimentsDir = '/datasets/twitter_sentiments_by_state.csv';
+let covidCasesDir = '/datasets/United_States_COVID-19_Cases_and_Deaths_all_States_over_Time.csv'
 
 // Store read data
 let usAbbreviations;
@@ -49,7 +50,8 @@ Promise.all([
     d3.tsv(usAbbrevDir),
     d3.csv(twitterSentimentsDir),
     d3.csv(covidCasesDir),
-    d3.tsv(usPolicyDir)
+    d3.tsv(usPolicyDir),
+    d3.tsv(sentimentsDir)
 ]).then(data => {
     let us = data[0];
     usAbbreviations = data[1];
@@ -61,6 +63,7 @@ Promise.all([
     console.log("covid by state processed");
     processPolicies(data[4]);
 
+    console.log(data[5][1]);
 
     // Map
     svg_map = d3.select("#map")
@@ -327,28 +330,15 @@ function reset() {
     active = d3.select(null);
 }
 
-
-function getColorScale() {
-    return d3.scaleQuantile()
-        .domain([-1, 1])
-        .range(['#ef8a62', '#deebf7', '#67a9cf']);
+function updateCholorplethMap(date) {
+    console.log(date);
 }
-
-function getSentimentsLegend(colorScale) {
-    return d3.legendColor()
-        //.labelFormat(d3.format(".2f"))
-        .labels(['Negative', 'Neutral', 'Positive'])
-        .ascending(true)
-        .title('Average Sentiment')
-        .scale(colorScale);
-}
-
 
 
 function processDataSetsCovid(covidData) {
     // Compute cumulative sentiments by state
     console.log('printing covid data')
-    console.log(covidData)
+    //console.log(covidData)
     const parseTime = d3.timeParse("%Y/%e/%d");
 
     covidByState = {};
@@ -377,7 +367,7 @@ function processDataSetsCovid(covidData) {
 function processDataSets(twitterSentiments) {
     // Compute cumulative sentiments by state
     console.log("printing twitter data")
-    console.log(twitterSentiments)
+    //console.log(twitterSentiments)
     let cumulativeSentimentsByState = {};
     for (let i = 0; i < twitterSentiments.length; i++) {
         if (!cumulativeSentimentsByState[twitterSentiments[i].state]) {
@@ -667,12 +657,6 @@ function drawTimeLine(svg, state) {
         .attr("x", width * 0.5)
         .attr("y", 32)
         .text("average sentiments by month: " + usAbbreviationsDict[state]);
-
-    /* svg.append("g")
-        .attr("class", "legend")
-        .attr("transform", "translate(" + 0.85 * (width) + "," + 0.77 * (height) + ")")
-        .call(legend); */
-
 }
 
 
@@ -762,7 +746,6 @@ function drawTimeLineCovid(svg, state) {
         );
 
     // draw circles for data points
-    //var colorScale = getColorScale();
 
     timeline_g.selectAll(".dot")
         .data(lineDataDay)
