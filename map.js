@@ -28,6 +28,10 @@ let twitterSentiments; // data[2]
 // Color when no sentiments available
 let defaultStateGrey = '#bdbdbd'
 
+// First and Last Date of map
+let firstDay = new Date(2020, 0, 1);
+let lastDay = new Date(2021, 10, 1);
+
 
 
 let avgSentimentsByState;
@@ -63,7 +67,7 @@ Promise.all([
     usAbbreviations = data[1];
     twitterSentiments = data[2];
     usAbbreviationsDictInit();
-    processDataSets(1577862211, 1635736109); // replace start and end with true start and end timestamps originally
+    processDataSets(firstDay, lastDay); // replace start and end with true start and end timestamps originally
     processDataSetsTimeline(data[2]);
 
     processDataSetsCovid(data[3]);
@@ -129,7 +133,7 @@ function drawMap(svg, us) {
             let code = getStateObj(d.id).code;
             // Remove DC - District of Columbia is not a state
             if (code != 'DC')
-                return 'path_'+d.id;
+                return 'path_' + d.id;
         })
         //.attr('fill', '#ccc')
         .attr("fill", function (d) {
@@ -341,10 +345,10 @@ function reset() {
 }
 
 // Update cholorpleth map with new start and end timestamps
-function updateCholorplethMap(start, end) {
+function updateCholorplethMap(startDateTime, endDateTime) {
     // Update dataset - avgSentimentsByState
-    processDataSets(start, end);
-    
+    processDataSets(startDateTime, endDateTime);
+
     /* update color for each state:
     Go over each state text to get state names (this is one approach)
     Retrieve state path by ID --> d3.select('#path_'+state_id)
@@ -356,9 +360,9 @@ function updateCholorplethMap(start, end) {
         let color = colorScale(avgSentimentsByState[state]);
         // update color for state
         if (state != 'DC' && color) {
-            d3.select('#path_'+state_id).style('fill', color);
+            d3.select('#path_' + state_id).style('fill', color);
         } else if (!color) {
-            d3.select('#path_'+state_id).style('fill', defaultStateGrey);
+            d3.select('#path_' + state_id).style('fill', defaultStateGrey);
         }
     });
 }
@@ -389,15 +393,14 @@ function processDataSetsCovid(covidData) {
 
 
 
-
-
-
 // filter dataset by time
 function processDataSets(start, end) {
     // Compute cumulative sentiments by state
     let cumulativeSentimentsByState = {};
     for (let i = 0; i < twitterSentiments.length; i++) {
-        if (twitterSentiments[i].timestamp >= start && twitterSentiments[i].timestamp <= end) {
+        // Get timestamps in miliseconds - (13 digits in timestamp)
+        if (new Date(twitterSentiments[i].timestamp * 1000) >= start
+            && new Date(twitterSentiments[i].timestamp * 1000) <= end) {
             if (!cumulativeSentimentsByState[twitterSentiments[i].state]) {
                 cumulativeSentimentsByState[twitterSentiments[i].state] =
                     { 'sentiment': [+twitterSentiments[i].sentiment] }

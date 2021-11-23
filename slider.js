@@ -5,21 +5,34 @@ function sliderInit() {
   let tfmt = "%b-%d-%Y"
 
   // Jan: 0, Dec: 11
-  let sliderStart = new Date(2020,0,1);
-  let sliderEnd = new Date(2021,10,1);
+  let sliderStart = firstDay;
+  let sliderEnd = lastDay;
+
 
   sliderRange = d3
-  .sliderBottom()
-  .min(sliderStart)
-  .max(sliderEnd)
-  .width(window.innerWidth-200)
-  .tickFormat(d3.timeFormat(kfmt))
-  .ticks(d3.timeMonth.every(1))
-  .default([sliderStart, sliderEnd])
-  .fill('#2196f3')
-  .on('onchange', val => {
-    d3.select('p#value-range').text(val.map(d3.timeFormat(tfmt)).join('-'));
-  });
+    .sliderBottom()
+    .min(sliderStart)
+    .max(sliderEnd)
+    .width(window.innerWidth - 200)
+    .tickFormat(d3.timeFormat(kfmt))
+    .ticks(d3.timeMonth.every(1))
+    .default([sliderStart, sliderEnd])
+    .fill('#2196f3')
+    .on('onchange', val => {
+      d3.select('p#value-range').text(val.map(d3.timeFormat(tfmt)).join('-'));
+
+      // Convert timestamps to Date
+      let range = getSliderData();
+      if (!(range[0] instanceof Date)) {
+        range[0] = new Date(range[0]);
+      }
+      if (!(range[1] instanceof Date)) {
+        range[1] = new Date(range[1]);
+      }
+
+      // Update Choropleth map
+      updateCholorplethMap(range[0], range[1])
+    });
   let gRange = d3
     .select('div#slider-range')
     .append('svg')
@@ -38,7 +51,7 @@ function sliderInit() {
 
 
   // Time
-  var dataTime = d3.range(0, 10).map(function(d) {
+  var dataTime = d3.range(0, 10).map(function (d) {
     return new Date(1995 + d, 10, 3);
   });
 
@@ -70,7 +83,7 @@ function sliderInit() {
 
 
 
-  
+
 }
 
 function getSliderData() {
