@@ -62,11 +62,6 @@ Promise.all([
     processPolicies(data[4]);
 
 
-    // LEGEND
-    /* Define color scale */
-    // colorScale = getColorScale();
-    // legend = getSentimentsLegend(colorScale);
-
     // Map
     svg_map = d3.select("#map")
         .attr("width", width)
@@ -74,8 +69,7 @@ Promise.all([
     drawMap(svg_map, us);
 
     // Add legend
-    addLegend('#legend');
-
+    addLegend();
 
     // Timeline
     svg_timeline = d3.select("body").append("svg")
