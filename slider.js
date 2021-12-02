@@ -32,6 +32,8 @@ function sliderInit() {
 
       // Update Choropleth map
       updateCholorplethMap(range[0], range[1])
+
+      updateTimeLine(range[0], range[1])
     });
   let gRange = d3
     .select('div#slider-range')
