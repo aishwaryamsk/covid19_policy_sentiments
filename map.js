@@ -833,7 +833,7 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
         .attr("stroke-width", 2.5)
         .on("mouseover", function (d, i) {
             d3.select(this).attr("stroke", purple);
-            let cont = d.mmddyyyy + "<br>";
+            let cont = "<b>" + d.mmddyyyy + "</b><br>";
             // make it multiple lines
             let lineMaxLen = 40; // maximum 40 chars per line
             cont += getMultipleLinesHTML(d["Action Taken"], lineMaxLen);
