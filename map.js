@@ -1,4 +1,6 @@
-let width = window.innerWidth - 150, height = window.innerHeight, active = d3.select(null);
+let width = window.innerWidth - 225; //map width
+let height = window.innerHeight -30 -150; // map height, subtract title and slider heights
+let active = d3.select(null); 
 
 // Timeline // for both map and line - 50% height each
 let timeline_width = window.innerWidth, timeline_height = window.innerHeight / 2;
@@ -184,6 +186,14 @@ function drawMap(svg, us) {
         .attr('fill', '#484848')
         .attr("font-size", "10px");
 
+    // Add state text
+    svg_map.append("text")
+        .attr('id', 'selected-state')
+        .text('')
+        .attr("text-anchor", "middle")
+        .attr("x", width * 0.5)
+        .attr("y", height / 8)
+        .attr("dy", "-15");
 }
 
 
@@ -228,6 +238,8 @@ function getStateObj(id) {
 
 // Zoom to state
 function handleStateClick(d, i) {
+
+
     // If clicked on an active state, reset it
     if (active.node() === this) return reset();
 
@@ -239,7 +251,7 @@ function handleStateClick(d, i) {
     y = (bounds[0][1] + bounds[1][1]) / 2;
 
     // Adjust scale of zoom
-    let zoomScale = 0.4;
+    let zoomScale = 0.3;
     scale = zoomScale / Math.max(dx / width, dy / height);
 
     // Adjust vertical position on page
@@ -270,6 +282,13 @@ function handleStateClick(d, i) {
             // Hide other states after transition completes
             d3.selectAll(".state > path").style("display", "none");
             activeState.style("display", "inline");
+
+            // Show selected state title
+            d3.select('#selected-state').text(getStateObj(d.id).name);
+            d3.select('#selected-state').style("display", "inline");
+
+            // Show Back button
+            d3.select('#back').style("display", "inline");
         });
 
     // Reduce height to make space for timeline chart
@@ -300,11 +319,20 @@ function handleStateClick(d, i) {
     // Activate class
     active.classed("active", false);
     active = d3.select(this).classed("active", true);
+
 }
 
 
 // Zoome out of selected state
 function reset() {
+
+    // Hide selected state title
+    d3.select('#selected-state').text('');
+    d3.select('#selected-state').style("display", "none");
+
+    // Hide Back button
+    d3.select('#back').style("display", "none");
+
     // Show other states
     // Transition to make other states opaque
     d3.selectAll(".state > path")
