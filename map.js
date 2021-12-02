@@ -45,6 +45,8 @@ let covidDeathsByState;
 // let colorScale;
 let legend;
 
+let currentState;
+
 
 
 // SVGs
@@ -578,20 +580,78 @@ function processDataSetsTimeline(twitterSentiments) {
 
 }
 
+function updateTimeLine(startDateTime, endDateTime) {
+    drawTimeLine(svg_timeline, currentState, startDateTime, endDateTime);
+}
+
+function drawTimeLine(svg, state, startDateTime, endDateTime) {
+
+    if (startDateTime) {
+        // is update
+        var elementExists = document.getElementById("timeline_g");
+        if (elementExists) {
+            elementExists.remove();
+        }    
+    }
 
 
-function drawTimeLine(svg, state) {
-    // <<<<<<< brando
-    //     console.log("Drawing timeline", state)
-    // =======
-    //     var elementExists = document.getElementById("timeline_g");
-    //     if (elementExists) {
-    //         elementExists.remove();
-    //     }
+    currentState = state;
 
-    // >>>>>>> main
     let sentimentsYM = avgSentimentsByStateYearMonth[state];
     let sentimentsYMD = avgSentimentsByStateYearMonthDay[state];
+
+    // console.log(svg, state, startDateTime, endDateTime);
+    // console.log(sentimentsYM);
+
+    let inrangeYM = [];
+    let inrangeYMD = [];
+
+    if (startDateTime) {
+        let startYM = new Date(startDateTime.getFullYear(), startDateTime.getMonth()).getTime();
+        let endYM = new Date(endDateTime.getFullYear(), endDateTime.getMonth()).getTime();
+        for (let ty = 2020; ty <= 2021; ty++) {
+            for (let tm = 1; tm <= 12; tm++) {
+                let ym_obj = new Date(ty, tm-1).getTime();
+                // console.log(ym_obj, startYM, endYM);
+
+                if (ym_obj >= startYM && ym_obj <= endYM) {
+                    let tym = ty + "," + tm;
+                    inrangeYM.push(tym);
+                }
+            }
+        }
+        let tmp = startDateTime;
+        let endYMD = endDateTime.getTime();
+        while (tmp.getTime() <= endYMD) {
+            let tymd = tmp.getFullYear() + ',' + (tmp.getMonth()+1) +  ',' + tmp.getDate();
+            // console.log(tymd);
+            inrangeYMD.push(tymd);
+            let nextDay = new Date(tmp);
+            nextDay.setDate(tmp.getDate() + 1);
+            tmp = nextDay;
+        }
+
+    } else {
+        for (let ty = 2020; ty <= 2021; ty++) {
+            for (let tm = 1; tm <= 12; tm++) {
+                let tym = ty + "," + tm;
+                inrangeYM.push(tym);
+            }
+        }
+
+        let tmp = new Date(2020,0,1);
+        let endYMD = new Date(2021,11,31).getTime();
+        while (tmp.getTime() <= endYMD) {
+            let tymd = tmp.getFullYear() + ',' + (tmp.getMonth()+1) +  ',' + tmp.getDate();
+            // console.log(tymd);
+            inrangeYMD.push(tymd);
+            let nextDay = new Date(tmp);
+            nextDay.setDate(tmp.getDate() + 1);
+            tmp = nextDay;
+        }
+
+
+    }
 
 
     const monthParser = d3.timeParse("%Y,%m");
@@ -600,11 +660,20 @@ function drawTimeLine(svg, state) {
     let lineData = [];
 
     for (let yearMonth in sentimentsYM) {
+        if (!inrangeYM.includes(yearMonth)) {
+            continue;
+        }
         let dt = monthParser(yearMonth);
 
         lineData.push({ date: dt, sentiment: sentimentsYM[yearMonth], ts: dt.getTime() });
     }
+
+
+
     for (let yearMonthDay in sentimentsYMD) {
+        if (!inrangeYMD.includes(yearMonthDay)) {
+            continue;
+        }
         let dt = dayParser(yearMonthDay);
         lineDataDay.push({ date: dt, sentiment: sentimentsYMD[yearMonthDay] });
     }
@@ -728,7 +797,12 @@ function drawTimeLine(svg, state) {
         .data(policyData)
         .enter().append("circle")
         .attr("class", "dot")
-        .attr("cx", function (d, i) { return xScale(d["Date"]) })
+        .attr("cx", function (d, i) {
+            if (xScale(d["Date"]) < -0.01) {
+                return -1000.0; // move out of screen
+            } else {
+                return xScale(d["Date"]);
+            } })
         .attr("cy", function (d) {
             let ts = d["Date"].getTime();
             if (ts <= lineData[0].ts) {
