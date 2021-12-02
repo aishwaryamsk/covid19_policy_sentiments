@@ -2,10 +2,12 @@ let width = window.innerWidth - 225; //map width
 let height = window.innerHeight -30 -150; // map height, subtract title and slider heights
 let active = d3.select(null); 
 
-// Timeline // for both map and line - 50% height each
-let timeline_width = window.innerWidth, timeline_height = window.innerHeight / 2;
 
-var margin = { top: 15, right: 70, bottom: 60, left: 50 }
+var margin = { top: 40, right: 70, bottom: 100, left: 50 }
+
+// Timeline // for both map and line - 50% height each
+let timeline_width = window.innerWidth - margin.right, timeline_height = window.innerHeight / 2;
+
 
 let geojson = 'https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson';
 let usStatesDir = '/datasets/us.json';
@@ -102,6 +104,8 @@ Promise.all([
         .attr("height", timeline_height);
 
     d3.select('#timeline').style("opacity", 0).style("display", "none");
+    d3.select('#timeline_covid').style("opacity", 0).style("display", "none");
+    d3.select('#timeline_covid_deaths').style("opacity", 0).style("display", "none");
     // d3.select('#covid_timeline').style("opacity", 0).style("display", "none");
 
 });
@@ -329,7 +333,11 @@ function handleStateClick(d, i) {
         .style("display", "inline")
         .transition()
         .duration(zoomStateTime).style("opacity", 1);
-    d3.select('#covid_timeline')
+    d3.select('#timeline_covid')
+        .style("display", "inline")
+        .transition()
+        .duration(zoomStateTime).style("opacity", 1);
+    d3.select('#timeline_covid_deaths')
         .style("display", "inline")
         .transition()
         .duration(zoomStateTime).style("opacity", 1);
@@ -382,12 +390,19 @@ function reset() {
         .on('end', function () {
             d3.select('#timeline').style("display", "none");
         })
-    // d3.select('#timeline_covid')
-    //     .transition()
-    //     .duration(zoomStateTime).style("opacity", 0)
-    //     .on('end', function () {
-    //         d3.select('#timeline_covid').style("display", "none");
-    //     })
+    d3.select('#timeline_covid_deaths')
+        .transition()
+        .duration(zoomStateTime).style("opacity", 0)
+        .on('end', function () {
+            d3.select('#timeline_covid_deaths').style("display", "none");
+        })
+    d3.select('#timeline_covid')
+        .transition()
+        .duration(zoomStateTime).style("opacity", 0)
+        .on('end', function () {
+            d3.select('#timeline_covid').style("display", "none");
+        })
+
 
     // Mark the state as not active anymore
     active.classed("active", false);
@@ -642,13 +657,13 @@ function drawTimeLine(svg, state) {
     let x_axis_obj = timeline_g.append("g")
         .attr("transform", "translate(" + 0 + "," + (timeline_height - margin.bottom) + ")")
         .call(xaxis);
-    timeline_g.append("text")
-        .text("Month")
-        .style("font-size", "22px")
-        .attr("text-anchor", "middle")
-        .attr("class", "x label")
-        .attr("x", timeline_width * 0.5)
-        .attr("y", timeline_height - 24);
+    // timeline_g.append("text")
+    //     .text("Month")
+    //     .style("font-size", "22px")
+    //     .attr("text-anchor", "middle")
+    //     .attr("class", "x label")
+    //     .attr("x", timeline_width * 0.5)
+    //     .attr("y", timeline_height - 24);
 
     // y axis
     let y_axis_obj = timeline_g.append("g")
@@ -660,7 +675,7 @@ function drawTimeLine(svg, state) {
         .attr("text-anchor", "middle")
         .attr("class", "y label")
         .attr("x", -timeline_height * 0.5)
-        .attr("y", 15)
+        .attr("y", 0)
         .attr("transform", "rotate(-90)")
 
     // draw lines
@@ -760,9 +775,9 @@ function drawTimeLine(svg, state) {
     timeline_g.append("text")
         .attr("text-anchor", "middle")
         .style("font-size", "28px")
-        .attr("x", width * 0.5)
-        .attr("y", 32)
-        .text("average sentiments by month: " + usAbbreviationsDict[state]);
+        .attr("x", timeline_width * 0.5)
+        .attr("y", 5)
+        .text("Average Sentiments by Month");
 }
 
 
@@ -802,6 +817,7 @@ function drawTimeLineCovid(svg, state) {
 
     console.log("extent", d3.extent(cases, function (d) { return d }));
     let yScale = d3.scaleLinear()
+        // .range([timeline_height - margin.bottom, margin.top])
         .range([timeline_height - margin.bottom, margin.top])
         // .domain(d3.extent(lineDataDay, function (d) { return d.new_cases }));
         .domain([0,Math.max(...cases)]);
@@ -819,13 +835,13 @@ function drawTimeLineCovid(svg, state) {
     let x_axis_obj = timeline_g.append("g")
         .attr("transform", "translate(" + 0 + "," + (timeline_height - margin.bottom) + ")")
         .call(xaxis);
-    timeline_g.append("text")
-        .text("Day")
-        .style("font-size", "22px")
-        .attr("text-anchor", "middle")
-        .attr("class", "x label")
-        .attr("x", timeline_width * 0.5)
-        .attr("y", timeline_height - 24);
+    // timeline_g.append("text")
+    //     .text("Day")
+    //     .style("font-size", "22px")
+    //     .attr("text-anchor", "middle")
+    //     .attr("class", "x label")
+    //     .attr("x", timeline_width * 0.5)
+    //     .attr("y", timeline_height - 24);
     // y axis
     let y_axis_obj = timeline_g.append("g")
         .attr("transform", "translate(" + margin.left + "," + 0 + ")")
@@ -836,7 +852,7 @@ function drawTimeLineCovid(svg, state) {
         .attr("text-anchor", "middle")
         .attr("class", "y label")
         .attr("x", -timeline_height * 0.5)
-        .attr("y", 15)
+        .attr("y", 0)
         .attr("transform", "rotate(-90)")
 
     // draw lines
@@ -856,8 +872,8 @@ function drawTimeLineCovid(svg, state) {
         .attr("text-anchor", "middle")
         .style("font-size", "28px")
         .attr("x", timeline_width * 0.5)
-        .attr("y", 32)
-        .text("Daily New Cases: " + usAbbreviationsDict[state]);
+        .attr("y", 5)
+        .text("Daily New Cases");
 
 }
 
@@ -915,7 +931,7 @@ function drawTimeLineCovidDeaths(svg, state) {
         .attr("transform", "translate(" + 0 + "," + (timeline_height - margin.bottom) + ")")
         .call(xaxis);
     timeline_g.append("text")
-        .text("Day")
+        .text("Date")
         .style("font-size", "22px")
         .attr("text-anchor", "middle")
         .attr("class", "x label")
@@ -931,7 +947,7 @@ function drawTimeLineCovidDeaths(svg, state) {
         .attr("text-anchor", "middle")
         .attr("class", "y label")
         .attr("x", -timeline_height * 0.5)
-        .attr("y", 15)
+        .attr("y", 0)
         .attr("transform", "rotate(-90)")
 
     // draw lines
@@ -951,9 +967,9 @@ function drawTimeLineCovidDeaths(svg, state) {
         .attr("text-anchor", "middle")
         .style("font-size", "28px")
         .attr("x", timeline_width * 0.5)
-        .attr("y", 32)
+        .attr("y", 5)
 
-        .text("Daily Deaths: " + usAbbreviationsDict[state]);
+        .text("Daily Deaths");
 
 }
 
