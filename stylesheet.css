@@ -37,3 +37,28 @@ body{
 #legend {
   display: inline-block;
 }
+
+.break-line {
+  overflow-wrap: break-word;
+}
+
+#main-title {
+  height: 30px;
+  font-size: 24px;
+  font-weight: 700;
+  margin-top: 15px;
+  font-family: 'Merienda One';
+  text-align: center;
+}
+
+#back {
+  position: absolute;
+  right: 50px;
+  display: none;
+}
+
+#selected-state {
+  font-size: 19px;
+  font-weight: 600;
+  font-family: 'Merienda One';
+}
