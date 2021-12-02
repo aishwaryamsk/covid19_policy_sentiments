@@ -199,8 +199,8 @@ function drawMap(svg, us) {
         .text('')
         .attr("text-anchor", "middle")
         .attr("x", width * 0.5)
-        .attr("y", height / 8)
-        .attr("dy", "-15");
+        .attr("y", height / 2)
+        .attr("dy", "-10");
 }
 
 
