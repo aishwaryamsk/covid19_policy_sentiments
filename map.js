@@ -48,6 +48,7 @@ let legend;
 let currentState;
 
 
+let globalxScale;
 
 // SVGs
 let svg_map, svg_timeline, svg_covid_cases_timeline, svg_covid_deaths_timeline;
@@ -582,6 +583,8 @@ function processDataSetsTimeline(twitterSentiments) {
 
 function updateTimeLine(startDateTime, endDateTime) {
     drawTimeLine(svg_timeline, currentState, startDateTime, endDateTime);
+    // drawTimeLineCovid(svg_covid_cases_timeline, currentState, startDateTime, endDateTime);
+    // drawTimeLineCovidDeaths(svg_covid_deaths_timeline, currentState, startDateTime, endDateTime);
 }
 
 function drawTimeLine(svg, state, startDateTime, endDateTime) {
@@ -689,7 +692,7 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
         .attr("transform",
             "translate(" + margin.left + "," + margin.top + ")");
 
-    let xScale = d3.scaleTime()
+    globalxScale = d3.scaleTime()
         .range([margin.left, timeline_width - margin.right])
         .domain(d3.extent(lineData, function (d) { return d.date }));
 
@@ -697,30 +700,19 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
         .range([timeline_height - margin.bottom, margin.top])
         .domain(d3.extent(lineData, function (d) { return d.sentiment }));
 
-    let xScale2 = d3.scaleTime()
-        .range([margin.left, width - margin.right])
-        .domain(d3.extent(lineDataDay, function (d) { return d.date }));
 
-    let yScale2 = d3.scaleLinear()
-        .range([timeline_height - margin.bottom, margin.top])
-        .domain(d3.extent(lineDataDay, function (d) { return d.sentiment }));
 
 
     let xaxis = d3.axisBottom()
         .ticks(d3.timeMonth.every(1))
         .tickFormat(d3.timeFormat('%b %y'))
-        .scale(xScale);
-    let xaxis2 = d3.axisBottom()
-        .ticks(d3.timeDay.every(1))
-        .tickFormat(d3.timeFormat('%b %y'))
-        .scale(xScale2);
+        .scale(globalxScale);
+
 
     let yaxis = d3.axisLeft()
         .ticks(10)
         .scale(yScale);
-    let yaxis2 = d3.axisLeft()
-        .ticks(10)
-        .scale(yScale2);
+
 
     // x axis
     let x_axis_obj = timeline_g.append("g")
@@ -756,7 +748,7 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
         .attr("stroke", "green")
         .attr("stroke-width", 1.5)
         .attr("d", d3.line()
-            .x(function (d) { return xScale(d.date) })
+            .x(function (d) { return globalxScale(d.date) })
             .y(function (d) { return yScale(d.sentiment) })
         );
 
@@ -798,10 +790,10 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
         .enter().append("circle")
         .attr("class", "dot")
         .attr("cx", function (d, i) {
-            if (xScale(d["Date"]) < -0.01) {
+            if (globalxScale(d["Date"]) < 50.01) {
                 return -1000.0; // move out of screen
             } else {
-                return xScale(d["Date"]);
+                return globalxScale(d["Date"]);
             } })
         .attr("cy", function (d) {
             let ts = d["Date"].getTime();
@@ -858,7 +850,14 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
 
 
 
-function drawTimeLineCovid(svg, state) {
+function drawTimeLineCovid(svg, state, startDateTime, endDateTime) {
+    // if (startDateTime) {
+    //     // is update
+    //     var elementExists = document.getElementById("timeline_g1");
+    //     if (elementExists) {
+    //         elementExists.remove();
+    //     }    
+    // }
     console.log("Drawing timeline", state)
     let sentimentsYMD = covidCasesByState[state];
     let lineDataDay = [];
@@ -872,8 +871,17 @@ function drawTimeLineCovid(svg, state) {
     dates = []
     cases = []
     for (i=0; i < lineDataDay.length; i++) {
+        // if (startDateTime) {
+        //     console.log("startDateTime", startDateTime)
+        //     if ((lineDataDay[i].date.getTime() >= startDateTime.getTime()) &&
+        //         (lineDataDay[i].date.getTime() <= endDateTime.getTime())) {
+        //         dates.push(lineDataDay[i].date);
+        //         cases.push(lineDataDay[i].new_cases);
+        //     }
+        // } else {
         dates.push(lineDataDay[i].date);
         cases.push(lineDataDay[i].new_cases);
+        // }
         // console.log(lineDataDay[i].new_cases);
     }
     console.log("max cases", Math.max(...cases));
@@ -954,7 +962,14 @@ function drawTimeLineCovid(svg, state) {
 
 
 
-function drawTimeLineCovidDeaths(svg, state) {
+function drawTimeLineCovidDeaths(svg, state, startDateTime, endDateTime) {
+    // if (startDateTime) {
+    //     // is update
+    //     var elementExists = document.getElementById("timeline_g2");
+    //     if (elementExists) {
+    //         elementExists.remove();
+    //     }    
+    // }
     console.log("Drawing Deaths timeline", state)
     let sentimentsYMD = covidDeathsByState[state];
     let lineDataDay = [];
@@ -967,8 +982,15 @@ function drawTimeLineCovidDeaths(svg, state) {
     dates = []
     deaths = []
     for (i=0; i < lineDataDay.length; i++) {
+        // if (startDateTime) {
+        //     if ((lineDataDay[i].date.getTime() >= startDateTime.getTime()) && (lineDataDay[i].date.getTime() <= endDateTime.getTime())) {
+        //         dates.push(lineDataDay[i].date);
+        //         deaths.push(lineDataDay[i].new_deaths);
+        //     }
+        // } else {
         dates.push(lineDataDay[i].date);
         deaths.push(lineDataDay[i].new_deaths);
+        // }
         // console.log(lineDataDay[i].new_cases);
     }
     console.log("max cases", Math.max(...deaths));
