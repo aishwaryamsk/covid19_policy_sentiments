@@ -319,9 +319,9 @@ function handleStateClick(d, i) {
       }
 
     /* SHOW TIMELINE */
-    drawTimeLine(svg_timeline, getCountryObj(features[i].id).code);
-    drawTimeLineCovid(svg_covid_cases_timeline, getCountryObj(features[i].id).code);
-    drawTimeLineCovidDeaths(svg_covid_deaths_timeline, getCountryObj(features[i].id).code);
+    drawTimeLine(svg_timeline, getStateObj(features[i].id).code);
+    drawTimeLineCovid(svg_covid_cases_timeline, getStateObj(features[i].id).code);
+    drawTimeLineCovidDeaths(svg_covid_deaths_timeline, getStateObj(features[i].id).code);
 
 
     // Make timeline opaque
