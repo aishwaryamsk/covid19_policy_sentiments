@@ -9,11 +9,10 @@ let geojson = 'https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/
 let usStatesDir = '/datasets/us.json';
 let usAbbrevDir = '/datasets/us-state-names.tsv';
 let usPolicyDir = '/datasets/states_policies_clean.tsv';
-let sentimentsDir = '/datasets/all_twitter_data.tsv';
 
 // map data 
 // all time twitter sentiments
-let twitterSentimentsDir = '/datasets/twitter_sentiments_by_state.csv';
+let sentimentsDir = '/datasets/sentiments.tsv';
 let covidCasesDir = '/datasets/United_States_COVID-19_Cases_and_Deaths_all_States_over_Time.csv'
 
 // Store read data
@@ -58,10 +57,9 @@ let path = d3.geoPath().projection(projection);
 Promise.all([
     d3.json(usStatesDir),
     d3.tsv(usAbbrevDir),
-    d3.csv(twitterSentimentsDir),
+    d3.tsv(sentimentsDir),
     d3.csv(covidCasesDir),
-    d3.tsv(usPolicyDir),
-    //d3.tsv(sentimentsDir)
+    d3.tsv(usPolicyDir)
 ]).then(data => {
     let us = data[0];
     usAbbreviations = data[1];
@@ -390,8 +388,6 @@ function processDataSetsCovid(covidData) {
     console.log(covidByState)
 
 }
-
-
 
 // filter dataset by time
 function processDataSets(start, end) {
