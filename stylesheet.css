@@ -60,3 +60,12 @@ body{
   font-size: 19px;
   font-weight: 600;
 }
+
+#selected-time {
+  margin-left: 20px;
+}
+
+#selected-time, #value-range {
+  display:inline;
+  font-style: italic;
+}

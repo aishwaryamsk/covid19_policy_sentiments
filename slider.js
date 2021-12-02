@@ -19,7 +19,7 @@ function sliderInit() {
     .default([sliderStart, sliderEnd])
     .fill('#2196f3')
     .on('onchange', val => {
-      d3.select('p#value-range').text(val.map(d3.timeFormat(tfmt)).join('-'));
+      d3.select('div#value-range').text(val.map(d3.timeFormat(tfmt)).join('-'));
 
       // Convert timestamps to Date
       let range = getSliderData();
@@ -44,7 +44,7 @@ function sliderInit() {
     .attr('transform', 'translate(30,30)');
   gRange.call(sliderRange);
 
-  d3.select('p#value-range').text(
+  d3.select('div#value-range').text(
     sliderRange
       .value()
       .map(d3.timeFormat(tfmt))

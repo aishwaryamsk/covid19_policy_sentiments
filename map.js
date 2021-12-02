@@ -47,6 +47,9 @@ let legend;
 
 let currentState;
 
+// color
+let purple = '#af8dc3', green = '#5ab4ac', golden = '#d8b365';
+
 
 
 // SVGs
@@ -739,8 +742,9 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
         .attr("transform", "translate(" + margin.left + "," + 0 + ")")
         .call(yaxis);
     timeline_g.append("text")
-        .text("sentiment")
+        .text("Sentiment")
         .style("font-size", "22px")
+        .style("font-weight", "400")
         .attr("text-anchor", "middle")
         .attr("class", "y label")
         .attr("x", -timeline_height * 0.5)
@@ -753,7 +757,7 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
         .append("path")
         .datum(lineData)
         .attr("fill", "none")
-        .attr("stroke", "green")
+        .attr("stroke", purple)
         .attr("stroke-width", 1.5)
         .attr("d", d3.line()
             .x(function (d) { return xScale(d.date) })
@@ -778,18 +782,18 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
         .attr("id", "tooltip")
         .offset([-8, 0])
         .html("(tool_tip)")
+        //.style("width", "200px")
         .style("background-color", "white")
         .style("border", "solid")
         .style("border-width", "2px")
         .style("border-radius", "5px")
         .style("padding", "5px")
-        .style("font-size", "24px")
+        .style("font-size", "17px")
     svg.call(tool_tip);
 
     let policyData = usPoliciesByState[state];
 
-    let smallCircleSize = 9;
-    let largeCircleSize = 20;
+    let smallCircleSize = 8, largeCircleSize = 10;
 
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -825,22 +829,26 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
         })
         .attr("r", smallCircleSize)
         .attr("fill", "#ffffff")
-        .attr("stroke", "#24541a")
+        .attr("stroke", purple)
         .attr("stroke-width", 2.5)
         .on("mouseover", function (d, i) {
-            d3.select(this).attr("stroke", "#32a883");
+            d3.select(this).attr("stroke", purple);
             let cont = d.mmddyyyy + "<br>";
             // make it multiple lines
             let lineMaxLen = 40; // maximum 40 chars per line
             cont += getMultipleLinesHTML(d["Action Taken"], lineMaxLen);
             tool_tip.html(cont);
             tool_tip.show();
-            d3.select(this).attr("r", largeCircleSize);
+            d3.select(this)
+            .attr("fill", purple)
+            .attr("r", largeCircleSize);
         })
         .on("mouseout", function (d, i) {
-            d3.select(this).attr("stroke", "#24541a");
+            d3.select(this).attr("stroke", purple);
             tool_tip.hide();
-            d3.select(this).attr("r", smallCircleSize);
+            d3.select(this)
+            .attr("fill", '#ffffff')
+            .attr("r", smallCircleSize);
         })
     // "#32a883" "#24541a"
 
@@ -923,6 +931,7 @@ function drawTimeLineCovid(svg, state) {
     timeline_g.append("text")
         .text("New Cases")
         .style("font-size", "22px")
+        .style("font-weight", "400")
         .attr("text-anchor", "middle")
         .attr("class", "y label")
         .attr("x", -timeline_height * 0.5)
@@ -935,7 +944,7 @@ function drawTimeLineCovid(svg, state) {
         .append("path")
         .datum(lineDataDay)
         .attr("fill", "none")
-        .attr("stroke", "green")
+        .attr("stroke", green)
         .attr("stroke-width", 1.5)
         .attr("d", d3.line()
             .x(function (d) { return xScale(d.date) })
@@ -1007,6 +1016,7 @@ function drawTimeLineCovidDeaths(svg, state) {
     timeline_g.append("text")
         .text("Date")
         .style("font-size", "22px")
+        .style("font-weight", "400")
         .attr("text-anchor", "middle")
         .attr("class", "x label")
         .attr("x", timeline_width * 0.5)
@@ -1018,6 +1028,7 @@ function drawTimeLineCovidDeaths(svg, state) {
     timeline_g.append("text")
         .text("Deaths")
         .style("font-size", "22px")
+        .style("font-weight", "400")
         .attr("text-anchor", "middle")
         .attr("class", "y label")
         .attr("x", -timeline_height * 0.5)
@@ -1030,7 +1041,7 @@ function drawTimeLineCovidDeaths(svg, state) {
         .append("path")
         .datum(lineDataDay)
         .attr("fill", "none")
-        .attr("stroke", "green")
+        .attr("stroke", golden) 
         .attr("stroke-width", 1.5)
         .attr("d", d3.line()
             .x(function (d) { return xScale(d.date) })
@@ -1042,7 +1053,6 @@ function drawTimeLineCovidDeaths(svg, state) {
         .style("font-size", "28px")
         .attr("x", timeline_width * 0.5)
         .attr("y", 5)
-
         .text("Daily Deaths");
 
 }
