@@ -51,6 +51,9 @@ Promise.all([
     d3.csv(covidCasesDir),
     d3.tsv(usPolicyDir)
 ]).then(data => {
+    sliderInit();
+
+    
     let us = data[0];
     usAbbreviations = data[1];
     usAbbreviationsDictInit();

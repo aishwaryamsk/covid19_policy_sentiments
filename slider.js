@@ -19,6 +19,7 @@ function sliderInit() {
   .fill('#2196f3')
   .on('onchange', val => {
     d3.select('p#value-range').text(val.map(d3.timeFormat(tfmt)).join('-'));
+    onSliderChange();
   });
   let gRange = d3
     .select('div#slider-range')
@@ -77,4 +78,18 @@ function getSliderData() {
   return sliderRange.value()
 }
 
-sliderInit();
+function onSliderChange() {
+  let interval = getSliderData();
+  // start = d3.timeFormat('%Y')(interval[0])
+  // console.log(start)
+
+  let mdy = "%m-%d-%Y";
+  let formatter = d3.timeFormat(mdy);
+
+  let startDateStr = formatter(interval[0]);
+  let endDateStr = formatter(interval[1]);
+
+  console.log(startDateStr, endDateStr);
+  
+}
+
