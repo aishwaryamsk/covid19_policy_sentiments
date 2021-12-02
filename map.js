@@ -285,11 +285,15 @@ function handleStateClick(d, i) {
       while (myNode2.firstChild) {
         myNode2.removeChild(myNode2.lastChild);
       }
+    const myNode3 = document.getElementById("timeline_covid_deaths");
+      while (myNode3.firstChild) {
+        myNode3.removeChild(myNode3.lastChild);
+      }
 
     /* SHOW TIMELINE */
     drawTimeLine(svg_timeline, getCountryObj(features[i].id).code);
     drawTimeLineCovid(svg_covid_cases_timeline, getCountryObj(features[i].id).code);
-    // drawTimeLineCovidDeaths(svg_covid_deaths_timeline, getCountryObj(features[i].id).code);
+    drawTimeLineCovidDeaths(svg_covid_deaths_timeline, getCountryObj(features[i].id).code);
 
     // Make timeline opaque
     d3.select('#timeline')
@@ -384,14 +388,30 @@ function processDataSetsCovid(covidData) {
             // console.log("date", covidData[i].submission_date_format, covidData[i].state_abbr);
             // console.log(parseTime(covidData[i].submission_date_format));
             // console.log(formatTime(parseTime(covidData[i].submission_date_format)))
-            covidCasesByState[covidData[i].state_abbr] = []
-            covidCasesByState[covidData[i].state_abbr].push({'date': parseTime(covidData[i].submission_date_format), 'new_cases': covidData[i].new_case})
+            covidCasesByState[covidData[i].state_abbr] = [];
+            new_case = covidData[i].new_case;
+            new_death = covidData[i].new_death;
+            if (new_case < 0) {
+                new_case = 0
+            }
+            if (new_death < 0) {
+                new_death = 0
+            }
+            covidCasesByState[covidData[i].state_abbr].push({'date': parseTime(covidData[i].submission_date_format), 'new_cases': new_case})
             covidDeathsByState[covidData[i].state_abbr] = []
-            covidDeathsByState[covidData[i].state_abbr].push({'date': parseTime(covidData[i].submission_date_format), 'new_deaths': covidData[i].new_death})
+            covidDeathsByState[covidData[i].state_abbr].push({'date': parseTime(covidData[i].submission_date_format), 'new_deaths': new_death})
                 // { 'dates': [+parseTime(covidData[i].submission_date_format)], 'new_cases': [+covidData[i].new_case]}
         } else {
-            covidCasesByState[covidData[i].state_abbr].push({'date': parseTime(covidData[i].submission_date_format), 'new_cases': covidData[i].new_case})
-            covidDeathsByState[covidData[i].state_abbr].push({'date': parseTime(covidData[i].submission_date_format), 'new_deaths': covidData[i].new_death})
+            new_case = covidData[i].new_case;
+            new_death = covidData[i].new_death;
+            if (new_case < 0) {
+                new_case = 0
+            }
+            if (new_death < 0) {
+                new_death = 0
+            }
+            covidCasesByState[covidData[i].state_abbr].push({'date': parseTime(covidData[i].submission_date_format), 'new_cases': new_case})
+            covidDeathsByState[covidData[i].state_abbr].push({'date': parseTime(covidData[i].submission_date_format), 'new_deaths': new_death})
 
             // covidCasesByState[covidData[i].state_abbr]['dates'].push(+parseTime(covidData[i].submission_date_format))
             // covidCasesByState[covidData[i].state_abbr]['new_cases'].push(+covidData[i].new_case)
@@ -541,10 +561,6 @@ function drawTimeLine(svg, state) {
         .attr("id","timeline_g")
         .attr("transform",
             "translate(" + margin.left + "," + margin.top + ")");
-    let timeline_g2 = svg.append("g")
-        .attr("transform",
-            "translate(" + margin.left + "," + margin.top*2 + ")");
-
     let xScale = d3.scaleTime()
         .range([margin.left, timeline_width - margin.right])
         .domain(d3.extent(lineData, function (d) { return d.date }));
@@ -714,7 +730,7 @@ function drawTimeLine(svg, state) {
 
 
 
-function drawTimeLineCovid(svg, state, type) {
+function drawTimeLineCovid(svg, state) {
     console.log("Drawing timeline", state)
     let sentimentsYMD = covidCasesByState[state];
     let lineDataDay = [];
@@ -804,6 +820,102 @@ function drawTimeLineCovid(svg, state, type) {
         .attr("y", 32)
 
         .text("Daily New Cases: " + usAbbreviationsDict[state]);
+
+}
+
+
+
+
+function drawTimeLineCovidDeaths(svg, state) {
+    console.log("Drawing Deaths timeline", state)
+    let sentimentsYMD = covidDeathsByState[state];
+    let lineDataDay = [];
+    console.log("drawCovidDeathsTimeline: sentimentsYMD", sentimentsYMD);
+    lineDataDay = sentimentsYMD;
+    function sortByDateAscending(a, b) {
+        return a.date - b.date;
+    }
+    lineDataDay = lineDataDay.sort(sortByDateAscending);
+    dates = []
+    deaths = []
+    for (i=0; i < lineDataDay.length; i++) {
+        dates.push(lineDataDay[i].date);
+        deaths.push(lineDataDay[i].new_deaths);
+        // console.log(lineDataDay[i].new_cases);
+    }
+    console.log("max cases", Math.max(...deaths));
+
+
+
+    let timeline_g = svg.append("g")
+        .attr("id","timeline_g2")
+        .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+
+
+    let xScale = d3.scaleTime()
+        .range([margin.left, timeline_width - margin.right])
+        .domain(d3.extent(dates, function (d) { return d }));
+
+    console.log("extent", d3.extent(cases, function (d) { return d }));
+    let yScale = d3.scaleLinear()
+        .range([timeline_height - margin.bottom, margin.top])
+        // .domain(d3.extent(lineDataDay, function (d) { return d.new_cases }));
+        .domain([0,Math.max(...deaths)]);
+
+
+    let xaxis = d3.axisBottom()
+        .ticks(d3.timeDay.every(100))
+        .tickFormat(d3.timeFormat('%b %y'))
+        .scale(xScale);
+
+    let yaxis = d3.axisLeft()
+        .ticks(10)
+        .scale(yScale);
+    // x axis
+    let x_axis_obj = timeline_g.append("g")
+        .attr("transform", "translate(" + 0 + "," + (timeline_height - margin.bottom) + ")")
+        .call(xaxis);
+    timeline_g.append("text")
+        .text("Day")
+        .style("font-size", "22px")
+        .attr("text-anchor", "middle")
+        .attr("class", "x label")
+        .attr("x", timeline_width * 0.5)
+        .attr("y", timeline_height - 24);
+    // y axis
+    let y_axis_obj = timeline_g.append("g")
+        .attr("transform", "translate(" + margin.left + "," + 0 + ")")
+        .call(yaxis);
+    timeline_g.append("text")
+        .text("Deaths")
+        .style("font-size", "22px")
+        .attr("text-anchor", "middle")
+        .attr("class", "y label")
+        .attr("x", -timeline_height * 0.5)
+        .attr("y", 15)
+        .attr("transform", "rotate(-90)")
+
+    // draw lines
+    let lines_a = timeline_g.append("g");
+    lines_a
+        .append("path")
+        .datum(lineDataDay)
+        .attr("fill", "none")
+        .attr("stroke", "green")
+        .attr("stroke-width", 1.5)
+        .attr("d", d3.line()
+            .x(function (d) { return xScale(d.date) })
+            .y(function (d) { return yScale(d.new_deaths) })
+        );
+
+    timeline_g.append("text")
+        .attr("text-anchor", "middle")
+        .style("font-size", "28px")
+        .attr("x", timeline_width * 0.5)
+        .attr("y", 32)
+
+        .text("Daily Deaths: " + usAbbreviationsDict[state]);
 
 }
 
