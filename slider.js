@@ -29,11 +29,10 @@ function sliderInit() {
       if (!(range[1] instanceof Date)) {
         range[1] = new Date(range[1]);
       }
-
       // Update Choropleth map
-      updateCholorplethMap(range[0], range[1])
-
-      updateTimeLine(range[0], range[1])
+      //updateCharts(range[0], range[1]);
+      updateCholorplethMap(range[0], range[1]);
+      //updateTimeLine(range[0], range[1]);
     });
   let gRange = d3
     .select('div#slider-range')
