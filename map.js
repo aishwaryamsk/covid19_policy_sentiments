@@ -1,6 +1,6 @@
 let width = window.innerWidth - 225; //map width
-let height = window.innerHeight -30 -150; // map height, subtract title and slider heights
-let active = d3.select(null); 
+let height = window.innerHeight - 30 - 150; // map height, subtract title and slider heights
+let active = d3.select(null);
 
 
 var margin = { top: 40, right: 70, bottom: 100, left: 50 }
@@ -308,11 +308,11 @@ function handleStateClick(d, i) {
     const myNode2 = document.getElementById("timeline_covid");
     while (myNode2.firstChild) {
         myNode2.removeChild(myNode2.lastChild);
-      }
+    }
     const myNode3 = document.getElementById("timeline_covid_deaths");
-      while (myNode3.firstChild) {
+    while (myNode3.firstChild) {
         myNode3.removeChild(myNode3.lastChild);
-      }
+    }
 
     /* SHOW TIMELINE */
     drawTimeLine(svg_timeline, getStateObj(features[i].id).code);
@@ -443,10 +443,10 @@ function processDataSetsCovid(covidData) {
             if (new_death < 0) {
                 new_death = 0
             }
-            covidCasesByState[covidData[i].state_abbr].push({'date': parseTime(covidData[i].submission_date_format), 'new_cases': new_case})
+            covidCasesByState[covidData[i].state_abbr].push({ 'date': parseTime(covidData[i].submission_date_format), 'new_cases': new_case })
             covidDeathsByState[covidData[i].state_abbr] = []
-            covidDeathsByState[covidData[i].state_abbr].push({'date': parseTime(covidData[i].submission_date_format), 'new_deaths': new_death})
-                // { 'dates': [+parseTime(covidData[i].submission_date_format)], 'new_cases': [+covidData[i].new_case]}
+            covidDeathsByState[covidData[i].state_abbr].push({ 'date': parseTime(covidData[i].submission_date_format), 'new_deaths': new_death })
+            // { 'dates': [+parseTime(covidData[i].submission_date_format)], 'new_cases': [+covidData[i].new_case]}
 
         } else {
             new_case = covidData[i].new_case;
@@ -457,8 +457,8 @@ function processDataSetsCovid(covidData) {
             if (new_death < 0) {
                 new_death = 0
             }
-            covidCasesByState[covidData[i].state_abbr].push({'date': parseTime(covidData[i].submission_date_format), 'new_cases': new_case})
-            covidDeathsByState[covidData[i].state_abbr].push({'date': parseTime(covidData[i].submission_date_format), 'new_deaths': new_death})
+            covidCasesByState[covidData[i].state_abbr].push({ 'date': parseTime(covidData[i].submission_date_format), 'new_cases': new_case })
+            covidDeathsByState[covidData[i].state_abbr].push({ 'date': parseTime(covidData[i].submission_date_format), 'new_deaths': new_death })
         }
     }
 }
@@ -568,7 +568,7 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
         var elementExists = document.getElementById("timeline_g");
         if (elementExists) {
             elementExists.remove();
-        }    
+        }
     }
 
 
@@ -584,7 +584,7 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
         let endYM = new Date(endDateTime.getFullYear(), endDateTime.getMonth()).getTime();
         for (let ty = 2020; ty <= 2021; ty++) {
             for (let tm = 1; tm <= 12; tm++) {
-                let ym_obj = new Date(ty, tm-1).getTime();
+                let ym_obj = new Date(ty, tm - 1).getTime();
                 // console.log(ym_obj, startYM, endYM);
 
                 if (ym_obj >= startYM && ym_obj <= endYM) {
@@ -596,7 +596,7 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
         let tmp = startDateTime;
         let endYMD = endDateTime.getTime();
         while (tmp.getTime() <= endYMD) {
-            let tymd = tmp.getFullYear() + ',' + (tmp.getMonth()+1) +  ',' + tmp.getDate();
+            let tymd = tmp.getFullYear() + ',' + (tmp.getMonth() + 1) + ',' + tmp.getDate();
             // console.log(tymd);
             inrangeYMD.push(tymd);
             let nextDay = new Date(tmp);
@@ -612,18 +612,16 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
             }
         }
 
-        let tmp = new Date(2020,0,1);
-        let endYMD = new Date(2021,11,31).getTime();
+        let tmp = new Date(2020, 0, 1);
+        let endYMD = new Date(2021, 11, 31).getTime();
         while (tmp.getTime() <= endYMD) {
-            let tymd = tmp.getFullYear() + ',' + (tmp.getMonth()+1) +  ',' + tmp.getDate();
+            let tymd = tmp.getFullYear() + ',' + (tmp.getMonth() + 1) + ',' + tmp.getDate();
             // console.log(tymd);
             inrangeYMD.push(tymd);
             let nextDay = new Date(tmp);
             nextDay.setDate(tmp.getDate() + 1);
             tmp = nextDay;
         }
-
-
     }
 
 
@@ -640,8 +638,6 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
 
         lineData.push({ date: dt, sentiment: sentimentsYM[yearMonth], ts: dt.getTime() });
     }
-
-
 
     for (let yearMonthDay in sentimentsYMD) {
         if (!inrangeYMD.includes(yearMonthDay)) {
@@ -670,33 +666,17 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
         .range([timeline_height - margin.bottom, margin.top])
         .domain(d3.extent(lineData, function (d) { return d.sentiment }));
 
-    let xScale2 = d3.scaleTime()
-        .range([margin.left, width - margin.right])
-        .domain(d3.extent(lineDataDay, function (d) { return d.date }));
-
-    let yScale2 = d3.scaleLinear()
-        .range([timeline_height - margin.bottom, margin.top])
-        .domain(d3.extent(lineDataDay, function (d) { return d.sentiment }));
-
-
     let xaxis = d3.axisBottom()
         .ticks(d3.timeMonth.every(1))
         .tickFormat(d3.timeFormat('%b %y'))
         .scale(xScale);
-    let xaxis2 = d3.axisBottom()
-        .ticks(d3.timeDay.every(1))
-        .tickFormat(d3.timeFormat('%b %y'))
-        .scale(xScale2);
 
     let yaxis = d3.axisLeft()
         .ticks(10)
         .scale(yScale);
-    let yaxis2 = d3.axisLeft()
-        .ticks(10)
-        .scale(yScale2);
 
     // x axis
-    let x_axis_obj = timeline_g.append("g")
+    timeline_g.append("g")
         .attr("transform", "translate(" + 0 + "," + (timeline_height - margin.bottom) + ")")
         .call(xaxis);
     // timeline_g.append("text")
@@ -708,7 +688,7 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
     //     .attr("y", timeline_height - 24);
 
     // y axis
-    let y_axis_obj = timeline_g.append("g")
+    timeline_g.append("g")
         .attr("transform", "translate(" + margin.left + "," + 0 + ")")
         .call(yaxis);
     timeline_g.append("text")
@@ -749,73 +729,76 @@ function drawTimeLine(svg, state, startDateTime, endDateTime) {
         .style("font-size", "17px")
     svg.call(tool_tip);
 
-    let policyData = usPoliciesByState[state];
+    if (document.getElementById("timeline").style.display = "block") {
+        let policyData = usPoliciesByState[state];
 
-    let smallCircleSize = 8, largeCircleSize = 10;
+        let smallCircleSize = 8, largeCircleSize = 10;
 
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    timeline_g.selectAll(".dot")
-        .data(policyData)
-        .enter().append("circle")
-        .attr("class", "dot")
-        .attr("cx", function (d, i) {
-            if (xScale(d["Date"]) < -0.01) {
-                return -1000.0; // move out of screen
-            } else {
-                return xScale(d["Date"]);
-            } })
-        .attr("cy", function (d) {
-            let ts = d["Date"].getTime();
-            if (ts <= lineData[0].ts) {
-                return yScale(lineData[0].sentiment);
-            } else if (ts >= lineData[lineData.length - 1].ts) {
-                return yScale(lineData[lineData.length - 1].sentiment);
-            }
-            for (let i = 1; i < lineData.length; i++) {
-                let lts = lineData[i - 1].ts;
-                let rts = lineData[i].ts;
-                if (ts >= lts && ts <= rts) {
-                    // interpolate
-                    let delta = (ts - lts) / (rts - lts);
-                    let left = lineData[i - 1].sentiment;
-                    let right = lineData[i].sentiment;
-                    return yScale(left + delta * (right - left));
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        timeline_g.selectAll(".dot")
+            .data(policyData)
+            .enter().append("circle")
+            .attr("class", "dot")
+            .attr("cx", function (d, i) {
+                if (xScale(d["Date"]) < -0.01) {
+                    return -1000.0; // move out of screen
+                } else {
+                    return xScale(d["Date"]);
                 }
-            }
-            return 100;
-        })
-        .attr("r", smallCircleSize)
-        .attr("fill", "#ffffff")
-        .attr("stroke", purple)
-        .attr("stroke-width", 2.5)
-        .on("mouseover", function (d, i) {
-            d3.select(this).attr("stroke", purple);
-            let cont = "<b>" + d.mmddyyyy + "</b><br>";
-            // make it multiple lines
-            let lineMaxLen = 40; // maximum 40 chars per line
-            cont += getMultipleLinesHTML(d["Action Taken"], lineMaxLen);
-            tool_tip.html(cont);
-            tool_tip.show();
-            d3.select(this)
-            .attr("fill", purple)
-            .attr("r", largeCircleSize);
-        })
-        .on("mouseout", function (d, i) {
-            d3.select(this).attr("stroke", purple);
-            tool_tip.hide();
-            d3.select(this)
-            .attr("fill", '#ffffff')
-            .attr("r", smallCircleSize);
-        })
+            })
+            .attr("cy", function (d) {
+                let ts = d["Date"].getTime();
+                if (ts <= lineData[0].ts) {
+                    return yScale(lineData[0].sentiment);
+                } else if (ts >= lineData[lineData.length - 1].ts) {
+                    return yScale(lineData[lineData.length - 1].sentiment);
+                }
+                for (let i = 1; i < lineData.length; i++) {
+                    let lts = lineData[i - 1].ts;
+                    let rts = lineData[i].ts;
+                    if (ts >= lts && ts <= rts) {
+                        // interpolate
+                        let delta = (ts - lts) / (rts - lts);
+                        let left = lineData[i - 1].sentiment;
+                        let right = lineData[i].sentiment;
+                        return yScale(left + delta * (right - left));
+                    }
+                }
+                return 100;
+            })
+            .attr("r", smallCircleSize)
+            .attr("fill", "#ffffff")
+            .attr("stroke", purple)
+            .attr("stroke-width", 2.5)
+            .on("mouseover", function (d, i) {
+                d3.select(this).attr("stroke", purple);
+                let cont = "<b>" + d.mmddyyyy + "</b><br>";
+                // make it multiple lines
+                let lineMaxLen = 40; // maximum 40 chars per line
+                cont += getMultipleLinesHTML(d["Action Taken"], lineMaxLen);
+                tool_tip.html(cont);
+                tool_tip.show();
+                d3.select(this)
+                    .attr("fill", purple)
+                    .attr("r", largeCircleSize);
+            })
+            .on("mouseout", function (d, i) {
+                d3.select(this).attr("stroke", purple);
+                tool_tip.hide();
+                d3.select(this)
+                    .attr("fill", '#ffffff')
+                    .attr("r", smallCircleSize);
+            })
 
-    // add title
-    timeline_g.append("text")
-        .attr("text-anchor", "middle")
-        .style("font-size", "28px")
-        .attr("x", timeline_width * 0.5)
-        .attr("y", 5)
-        .text("Average Sentiments by Month");
+        // add title
+        timeline_g.append("text")
+            .attr("text-anchor", "middle")
+            .style("font-size", "28px")
+            .attr("x", timeline_width * 0.5)
+            .attr("y", 5)
+            .text("Average Sentiments by Month");
+    }
 }
 
 
@@ -830,7 +813,7 @@ function drawTimeLineCovid(svg, state) {
     lineDataDay = lineDataDay.sort(sortByDateAscending);
     dates = []
     cases = []
-    for (i=0; i < lineDataDay.length; i++) {
+    for (i = 0; i < lineDataDay.length; i++) {
         dates.push(lineDataDay[i].date);
         cases.push(lineDataDay[i].new_cases);
     }
@@ -838,7 +821,7 @@ function drawTimeLineCovid(svg, state) {
 
 
     let timeline_g = svg.append("g")
-        .attr("id","timeline_g1")
+        .attr("id", "timeline_g1")
         .attr("transform",
             "translate(" + margin.left + "," + margin.top + ")");
 
@@ -848,7 +831,7 @@ function drawTimeLineCovid(svg, state) {
 
     let yScale = d3.scaleLinear()
         .range([timeline_height - margin.bottom, margin.top])
-        .domain([0,Math.max(...cases)]);
+        .domain([0, Math.max(...cases)]);
 
 
     let xaxis = d3.axisBottom()
@@ -912,13 +895,13 @@ function drawTimeLineCovidDeaths(svg, state) {
     lineDataDay = lineDataDay.sort(sortByDateAscending);
     dates = []
     deaths = []
-    for (i=0; i < lineDataDay.length; i++) {
+    for (i = 0; i < lineDataDay.length; i++) {
         dates.push(lineDataDay[i].date);
         deaths.push(lineDataDay[i].new_deaths);
     }
 
     let timeline_g = svg.append("g")
-        .attr("id","timeline_g2")
+        .attr("id", "timeline_g2")
         .attr("transform",
             "translate(" + margin.left + "," + margin.top + ")");
 
@@ -929,7 +912,7 @@ function drawTimeLineCovidDeaths(svg, state) {
 
     let yScale = d3.scaleLinear()
         .range([timeline_height - margin.bottom, margin.top])
-        .domain([0,Math.max(...deaths)]);
+        .domain([0, Math.max(...deaths)]);
 
 
     let xaxis = d3.axisBottom()
@@ -972,7 +955,7 @@ function drawTimeLineCovidDeaths(svg, state) {
         .append("path")
         .datum(lineDataDay)
         .attr("fill", "none")
-        .attr("stroke", golden) 
+        .attr("stroke", golden)
         .attr("stroke-width", 1.5)
         .attr("d", d3.line()
             .x(function (d) { return xScale(d.date) })
