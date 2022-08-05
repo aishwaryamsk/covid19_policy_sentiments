@@ -8,7 +8,6 @@ function sliderInit() {
   let sliderStart = firstDay;
   let sliderEnd = lastDay;
 
-
   sliderRange = d3
     .sliderBottom()
     .min(sliderStart)
@@ -30,9 +29,7 @@ function sliderInit() {
         range[1] = new Date(range[1]);
       }
       // Update Choropleth map
-      //updateCharts(range[0], range[1]);
       updateCholorplethMap(range[0], range[1]);
-      //updateTimeLine(range[0], range[1]);
     });
   let gRange = d3
     .select('div#slider-range')
@@ -52,11 +49,11 @@ function sliderInit() {
 
 
   // Time
-  var dataTime = d3.range(0, 10).map(function (d) {
+  let dataTime = d3.range(0, 10).map(function (d) {
     return new Date(1995 + d, 10, 3);
   });
 
-  var sliderTime = d3
+  let sliderTime = d3
     .sliderBottom()
     .min(d3.min(dataTime))
     .max(d3.max(dataTime))
@@ -69,7 +66,7 @@ function sliderInit() {
       d3.select('p#value-time').text(d3.timeFormat('%Y')(val));
     });
 
-  var gTime = d3
+  let gTime = d3
     .select('div#slider-time')
     .append('svg')
     .attr('width', 500)
@@ -80,11 +77,6 @@ function sliderInit() {
   gTime.call(sliderTime);
 
   d3.select('p#value-time').text(d3.timeFormat('%Y')(sliderTime.value()));
-
-
-
-
-
 }
 
 function getSliderData() {
